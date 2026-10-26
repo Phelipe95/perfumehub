@@ -5,8 +5,6 @@ import java.math.BigDecimal;
 
 import br.com.perfumehub.categoria.Categoria;
 
-import static io.micrometer.common.util.StringUtils.isBlank;
-
 @Entity
 @Table(name = "produto")
 public class Produto {

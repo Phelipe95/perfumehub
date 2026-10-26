@@ -1,6 +1,7 @@
 package br.com.perfumehub.produto;
 
 import br.com.perfumehub.categoria.Categoria;
+import br.com.perfumehub.categoria.CategoriaRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +21,9 @@ class ProdutoServiceTest {
 
     @Mock
     private ProdutoRepository produtoRepository;
+
+    @Mock
+    private CategoriaRepository categoriaRepository;
 
     @InjectMocks
     private ProdutoService produtoService;
@@ -117,27 +121,101 @@ class ProdutoServiceTest {
     }
 
     @Test
-    void deveSalvarProduto() {
+    void deveCadastrarProdutoComCategoriaExistente() {
         Categoria categoria = new Categoria(
                 "Masculino",
                 "Perfumes masculinos"
         );
 
-        Produto produto = new Produto(
+        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
                 "Malbec",
                 new BigDecimal("150.00"),
                 10,
-                categoria
+                1L
         );
 
-        when(produtoRepository.save(produto))
-                .thenReturn(produto);
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
 
-        Produto produtoSalvo = produtoService.salvar(produto);
+        when(produtoRepository.save(any(Produto.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Produto produtoSalvo = produtoService.cadastrar(dto);
 
         assertEquals("Malbec", produtoSalvo.getNome());
         assertEquals(new BigDecimal("150.00"), produtoSalvo.getPreco());
+        assertEquals(10, produtoSalvo.getQuantidadeEstoque());
+        assertSame(categoria, produtoSalvo.getCategoria());
 
-        verify(produtoRepository).save(produto);
+        verify(categoriaRepository).findById(1L);
+        verify(produtoRepository).save(any(Produto.class));
+    }
+
+    @Test
+    void deveExcluirProdutoPorId() {
+        when(produtoRepository.existsById(1L))
+                .thenReturn(true);
+
+        produtoService.excluirPorId(1L);
+
+        verify(produtoRepository).existsById(1L);
+        verify(produtoRepository, times(1))
+                .deleteById(1L);
+    }
+
+    @Test
+    void deveLancarExcecaoAoFalharExclusao() {
+        when(produtoRepository.existsById(1L))
+                .thenReturn(true);
+
+        doThrow(new RuntimeException("Erro ao excluir"))
+                .when(produtoRepository)
+                .deleteById(1L);
+
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> produtoService.excluirPorId(1L)
+        );
+
+        assertEquals("Erro ao excluir", exception.getMessage());
+
+        verify(produtoRepository).existsById(1L);
+        verify(produtoRepository).deleteById(1L);
+    }
+
+    @Test
+    void deveLancarExcecaoAoExcluirProdutoInexistente() {
+        when(produtoRepository.existsById(1L))
+                .thenReturn(false);
+
+        NoSuchElementException exception = assertThrows(
+                NoSuchElementException.class,
+                () -> produtoService.excluirPorId(1L)
+        );
+
+        assertEquals("Produto não encontrado", exception.getMessage());
+
+        verify(produtoRepository, never()).deleteById(1L);
+    }
+
+    @Test
+    void deveLancarExcecaoAoCadastrarComCategoriaInexistente() {
+        when(categoriaRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                99L
+        );
+
+        assertThrows(
+                NoSuchElementException.class,
+                () -> produtoService.cadastrar(dto)
+        );
+
+        verify(categoriaRepository).findById(99L);
+        verify(produtoRepository, never()).save(any(Produto.class));
     }
 }
