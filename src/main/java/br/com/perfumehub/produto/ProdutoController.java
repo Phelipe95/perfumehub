@@ -1,9 +1,8 @@
 package br.com.perfumehub.produto;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -18,12 +17,28 @@ public class ProdutoController {
     }
 
     @GetMapping
-    public List<Produto> listarTodos() {
-        return produtoService.listarTodos();
+    public List<ProdutoRespostaDTO> listarTodos() {
+        List<ProdutoRespostaDTO> produtos = produtoService.listarTodos()
+                .stream()
+                .map(ProdutoRespostaDTO::fromEntity)
+                .toList();
+
+        return produtos;
     }
 
     @GetMapping("/{id}")
-    public Produto buscarPorId(@PathVariable Long id) {
-        return produtoService.buscarPorId(id);
+    public ProdutoRespostaDTO buscarPorId(@PathVariable Long id) {
+        Produto buscarProduto = produtoService.buscarPorId(id);
+
+        return ProdutoRespostaDTO.fromEntity(buscarProduto);
+    }
+
+    @PostMapping
+    public ResponseEntity<ProdutoRespostaDTO> cadastrar(@RequestBody ProdutoCadastroDTO dto) {
+        Produto produtoSalvo = produtoService.cadastrar(dto);
+
+        ProdutoRespostaDTO resposta = ProdutoRespostaDTO.fromEntity(produtoSalvo);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 }
