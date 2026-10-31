@@ -29,10 +29,6 @@ public class ProdutoService {
         return produtoRepository.findAll();
     }
 
-    public Produto salvar(Produto produto) {
-        return produtoRepository.save(produto);
-    }
-
     public void excluirPorId(Long id) {
         if(produtoRepository.existsById(id)) {
             produtoRepository.deleteById(id);

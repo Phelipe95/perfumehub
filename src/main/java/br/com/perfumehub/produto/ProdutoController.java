@@ -1,5 +1,6 @@
 package br.com.perfumehub.produto;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +35,7 @@ public class ProdutoController {
     }
 
     @PostMapping
-    public ResponseEntity<ProdutoRespostaDTO> cadastrar(@RequestBody ProdutoCadastroDTO dto) {
+    public ResponseEntity<ProdutoRespostaDTO> cadastrar(@Valid @RequestBody ProdutoCadastroDTO dto) {
         Produto produtoSalvo = produtoService.cadastrar(dto);
 
         ProdutoRespostaDTO resposta = ProdutoRespostaDTO.fromEntity(produtoSalvo);
