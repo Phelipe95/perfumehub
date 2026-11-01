@@ -22,7 +22,9 @@ public class ProdutoService {
     }
 
     public Produto buscarPorId(Long id) {
-        return produtoRepository.findById(id).orElseThrow();
+
+        return produtoRepository.findById(id).orElseThrow(
+                () -> new NoSuchElementException("Produto não encontrado."));
     }
 
     public List<Produto> listarTodos() {
