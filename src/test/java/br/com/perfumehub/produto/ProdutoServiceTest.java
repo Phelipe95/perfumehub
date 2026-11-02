@@ -168,7 +168,7 @@ class ProdutoServiceTest {
         when(produtoRepository.existsById(1L))
                 .thenReturn(true);
 
-        doThrow(new RuntimeException("Erro ao excluir"))
+        doThrow(new RuntimeException("Erro ao excluir."))
                 .when(produtoRepository)
                 .deleteById(1L);
 
@@ -177,7 +177,7 @@ class ProdutoServiceTest {
                 () -> produtoService.excluirPorId(1L)
         );
 
-        assertEquals("Erro ao excluir", exception.getMessage());
+        assertEquals("Erro ao excluir.", exception.getMessage());
 
         verify(produtoRepository).existsById(1L);
         verify(produtoRepository).deleteById(1L);
@@ -193,7 +193,7 @@ class ProdutoServiceTest {
                 () -> produtoService.excluirPorId(1L)
         );
 
-        assertEquals("Produto não encontrado", exception.getMessage());
+        assertEquals("Produto não encontrado.", exception.getMessage());
 
         verify(produtoRepository, never()).deleteById(1L);
     }
@@ -215,6 +215,120 @@ class ProdutoServiceTest {
                 () -> produtoService.cadastrar(dto)
         );
 
+        verify(categoriaRepository).findById(99L);
+        verify(produtoRepository, never()).save(any(Produto.class));
+    }
+
+    @Test
+    void deveAtualizarProdutoComCategoriaExistente() {
+        Categoria categoria1 = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Categoria categoria2 = new Categoria(
+                "Feminino",
+                "Perfumes femininos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria1
+        );
+
+        ProdutoCadastroDTO cadastroDTO = new ProdutoCadastroDTO(
+                "Lily",
+                new BigDecimal("180.00"),
+                5,
+                2L
+        );
+
+        when(produtoRepository.findById(1L))
+                .thenReturn(Optional.of(produto));
+
+        when(categoriaRepository.findById(2L))
+                .thenReturn(Optional.of(categoria2));
+
+        when(produtoRepository.save(produto))
+                .thenReturn(produto);
+
+        Produto resultado = produtoService.atualizar(1L, cadastroDTO);
+
+        assertEquals("Lily", resultado.getNome());
+        assertEquals(new BigDecimal("180.00"), resultado.getPreco());
+        assertEquals(5, resultado.getQuantidadeEstoque());
+        assertSame(categoria2, resultado.getCategoria());
+
+        verify(produtoRepository).findById(1L);
+        verify(categoriaRepository).findById(2L);
+        verify(produtoRepository).save(produto);
+    }
+
+    @Test
+    void deveLancarExcecaoAoAtualizarProdutoInexistente() {
+        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+                "Lily",
+                new BigDecimal("180.00"),
+                5,
+                2L
+        );
+
+        when(produtoRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        NoSuchElementException exception = assertThrows(
+                NoSuchElementException.class,
+                () -> produtoService.atualizar(99L, dto)
+        );
+
+        assertEquals("Produto não encontrado.", exception.getMessage());
+
+        verify(produtoRepository).findById(99L);
+        verifyNoInteractions(categoriaRepository);
+        verify(produtoRepository, never()).save(any(Produto.class));
+    }
+
+    @Test
+    void deveLancarExcecaoAoAtualizarComCategoriaInexistente() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+                "Lily",
+                new BigDecimal("180.00"),
+                5,
+                99L
+        );
+
+        when(produtoRepository.findById(1L))
+                .thenReturn(Optional.of(produto));
+
+        when(categoriaRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        NoSuchElementException exception = assertThrows(
+                NoSuchElementException.class,
+                () -> produtoService.atualizar(1L, dto)
+        );
+
+        assertEquals("Categoria não encontrada.", exception.getMessage());
+        assertEquals("Malbec", produto.getNome());
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertSame(categoria, produto.getCategoria());
+
+        verify(produtoRepository).findById(1L);
         verify(categoriaRepository).findById(99L);
         verify(produtoRepository, never()).save(any(Produto.class));
     }

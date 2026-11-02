@@ -20,7 +20,7 @@ public class Categoria {
 
     public Categoria(String nome, String descricao) {
         if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("O nome da categoria é obrigatório");
+            throw new IllegalArgumentException("O nome da categoria é obrigatório.");
         }
 
         this.nome = nome;

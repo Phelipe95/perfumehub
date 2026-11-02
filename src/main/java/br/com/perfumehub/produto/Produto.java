@@ -75,4 +75,33 @@ public class Produto {
 
         this.preco = novoPreco;
     }
+
+    public void atualizar(
+            String nome,
+            BigDecimal preco,
+            int quantidadeEstoque,
+            Categoria categoria
+    ) {
+
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("O nome é obrigatório.");
+        }
+
+        if (preco == null || preco.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Preço inválido.");
+        }
+
+        if (quantidadeEstoque < 0) {
+            throw new IllegalArgumentException("A quantidade não pode ser negativa.");
+        }
+
+        if (categoria == null) {
+            throw new IllegalArgumentException("A categoria é obrigatória.");
+        }
+
+        this.nome = nome;
+        this.preco = preco;
+        this.quantidadeEstoque = quantidadeEstoque;
+        this.categoria = categoria;
+    }
 }

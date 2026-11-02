@@ -130,4 +130,231 @@ class ProdutoTest {
 
         assertEquals(new BigDecimal("150.00"), produto.getPreco());
     }
+
+    @Test
+    void deveAtualizarProdutoValido() {
+        Categoria categoria1 = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Categoria categoria2 = new Categoria(
+                "Feminino",
+                "Perfumes femininos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria1
+        );
+
+        produto.atualizar(
+                "Lily",
+                new BigDecimal("180.00"),
+                5,
+                categoria2
+        );
+
+        assertEquals("Lily", produto.getNome());
+        assertEquals(new BigDecimal("180.00"), produto.getPreco());
+        assertEquals(5, produto.getQuantidadeEstoque());
+        assertEquals(categoria2, produto.getCategoria());
+    }
+
+    @Test
+    void deveRejeitarAtualizacaoComCategoriaNula() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produto.atualizar(
+                        "Lily",
+                        new BigDecimal("180.00"),
+                        5,
+                        null
+                ));
+
+        assertEquals("Malbec", produto.getNome());
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertEquals(categoria, produto.getCategoria());
+    }
+
+    @Test
+    void deveRejeitarAtualizacaoComPrecoNegativo() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produto.atualizar(
+                        "Lily",
+                        new BigDecimal("-50.00"),
+                        5,
+                        categoria
+                ));
+
+        assertEquals("Malbec", produto.getNome());
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertEquals(categoria, produto.getCategoria());
+    }
+
+    @Test
+    void deveRejeitarAtualizacaoComEstoqueNegativo() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produto.atualizar(
+                        "Lily",
+                        new BigDecimal("180.00"),
+                        -5,
+                        categoria
+                ));
+
+        assertEquals("Malbec", produto.getNome());
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertEquals(categoria, produto.getCategoria());
+    }
+
+    @Test
+    void deveRejeitarAtualizacaoComNomeEmBranco() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produto.atualizar(
+                        "   ",
+                        new BigDecimal("180.00"),
+                        5,
+                        categoria
+                ));
+
+        assertEquals("Malbec", produto.getNome());
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertEquals(categoria, produto.getCategoria());
+    }
+
+    @Test
+    void deveRejeitarAtualizacaoComNomeNulo() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produto.atualizar(
+                        null,
+                        new BigDecimal("180.00"),
+                        5,
+                        categoria
+                ));
+
+        assertEquals("Malbec", produto.getNome());
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertEquals(categoria, produto.getCategoria());
+    }
+
+    @Test
+    void deveRejeitarAtualizacaoComPrecoNulo() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produto.atualizar(
+                        "Lily",
+                        null,
+                        5,
+                        categoria
+                ));
+
+        assertEquals("Malbec", produto.getNome());
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertEquals(categoria, produto.getCategoria());
+    }
+
+    @Test
+    void deveAtualizarProdutoComPrecoEEstoqueZero() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        produto.atualizar(
+                "Lily",
+                new BigDecimal("0.00"),
+                0,
+                categoria
+        );
+
+        assertEquals("Lily", produto.getNome());
+        assertEquals(new BigDecimal("0.00"), produto.getPreco());
+        assertEquals(0, produto.getQuantidadeEstoque());
+        assertEquals(categoria, produto.getCategoria());
+    }
 }

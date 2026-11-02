@@ -42,4 +42,15 @@ public class ProdutoController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
+
+    @PutMapping("/{id}")
+    public ProdutoRespostaDTO atualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody ProdutoCadastroDTO dto
+    ) {
+
+        Produto produto = produtoService.atualizar(id, dto);
+
+        return ProdutoRespostaDTO.fromEntity(produto);
+    }
 }

@@ -29,6 +29,6 @@ public class CategoriaService {
 
     public Categoria buscarPorId(Long id) {
         return categoriaRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Categoria não encontrada"));
+                .orElseThrow(() -> new NoSuchElementException("Categoria não encontrada."));
     }
 }

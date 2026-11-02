@@ -35,7 +35,7 @@ public class ProdutoService {
         if(produtoRepository.existsById(id)) {
             produtoRepository.deleteById(id);
         } else {
-            throw new NoSuchElementException("Produto não encontrado");
+            throw new NoSuchElementException("Produto não encontrado.");
         }
     }
 
@@ -55,4 +55,22 @@ public class ProdutoService {
         return produtoRepository.save(produto);
     }
 
+    public Produto atualizar(Long id, ProdutoCadastroDTO dto) {
+        Produto produto = buscarPorId(id);
+
+        Categoria categoria = categoriaRepository
+                .findById(dto.categoriaId())
+                .orElseThrow(() ->
+                        new NoSuchElementException("Categoria não encontrada.")
+                );
+
+        produto.atualizar(
+                dto.nome(),
+                dto.preco(),
+                dto.quantidadeEstoque(),
+                categoria
+        );
+
+        return produtoRepository.save(produto);
+    }
 }
