@@ -53,4 +53,11 @@ public class ProdutoController {
 
         return ProdutoRespostaDTO.fromEntity(produto);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        produtoService.excluirPorId(id);
+
+        return ResponseEntity.noContent().build();
+    }
 }

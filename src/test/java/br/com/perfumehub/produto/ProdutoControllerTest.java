@@ -17,8 +17,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProdutoController.class)
 class ProdutoControllerTest {
@@ -231,5 +230,29 @@ class ProdutoControllerTest {
                         .value("JSON inválido ou dados incompatíveis com o formato esperado."));
 
         verifyNoInteractions(produtoService);
+    }
+
+    @Test
+    void deveExcluirProdutoERetornar204() throws Exception {
+
+        mockMvc.perform(delete("/produtos/{id}", 1L))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(produtoService).excluirPorId(1L);
+    }
+
+    @Test
+    void deveRetornar404AoExcluirProdutoInexistente() throws Exception {
+        doThrow(new NoSuchElementException("Produto não encontrado."))
+                .when(produtoService)
+                .excluirPorId(99L);
+
+        mockMvc.perform(delete("/produtos/{id}", 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("Produto não encontrado."));
+
+        verify(produtoService).excluirPorId(99L);
     }
 }
