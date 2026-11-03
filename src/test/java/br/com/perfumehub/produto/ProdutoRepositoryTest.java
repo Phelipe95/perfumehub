@@ -148,7 +148,7 @@ class ProdutoRepositoryTest {
             "Malbec",
             new BigDecimal("150.00"),
             10,
-            categoria
+            categoriaSalva
         );
 
         Produto produtoSalvo = produtoRepository.saveAndFlush(produto);
@@ -161,5 +161,54 @@ class ProdutoRepositoryTest {
         entityManager.clear();
 
         assertFalse(produtoRepository.existsById(produtoEncontrado.getId()));
+    }
+
+    @Test
+    void deveAtualizarTodosOsDadosDoProduto() {
+        Categoria categoriaOriginal = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Categoria novaCategoria = new Categoria(
+                "Feminino",
+                "Perfumes femininos"
+        );
+
+        Categoria categoriaOriginalSalva =
+                categoriaRepository.saveAndFlush(categoriaOriginal);
+
+        Categoria novaCategoriaSalva =
+                categoriaRepository.saveAndFlush(novaCategoria);
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoriaOriginalSalva
+        );
+
+        Produto produtoSalvo = produtoRepository.saveAndFlush(produto);
+        Long idOriginal = produtoSalvo.getId();
+
+        produtoSalvo.atualizar(
+                "Lily",
+                new BigDecimal("180.00"),
+                5,
+                novaCategoriaSalva
+        );
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Produto produtoEncontrado = produtoRepository
+                .findById(idOriginal)
+                .orElseThrow();
+
+        assertEquals(idOriginal, produtoEncontrado.getId());
+        assertEquals("Lily", produtoEncontrado.getNome());
+        assertEquals(new BigDecimal("180.00"), produtoEncontrado.getPreco());
+        assertEquals(5, produtoEncontrado.getQuantidadeEstoque());
+        assertEquals(novaCategoriaSalva.getId(), produtoEncontrado.getCategoria().getId());
     }
 }

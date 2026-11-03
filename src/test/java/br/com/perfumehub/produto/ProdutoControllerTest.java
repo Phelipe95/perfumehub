@@ -189,4 +189,47 @@ class ProdutoControllerTest {
 
         verify(produtoService).atualizar(1L, dtoEsperado);
     }
+
+    @Test
+    void deveRetornar404AoAtualizarComCategoriaInexistente() throws Exception {
+        String json = """
+            {
+                "nome": "Lily",
+                "preco": 180.00,
+                "quantidadeEstoque": 5,
+                "categoriaId": 99
+            }
+            """;
+
+        when(produtoService.atualizar(eq(1L), any(ProdutoCadastroDTO.class)))
+                .thenThrow(new NoSuchElementException("Categoria não encontrada."));
+
+        mockMvc.perform(put("/produtos/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("Categoria não encontrada."));
+
+    }
+
+    @Test
+    void deveRetornar400AoAtualizarComJsonMalFormado() throws Exception {
+        String json = """
+            {
+                "nome": "Lily",
+                "preco": 180.00,
+                "quantidadeEstoque": 5,
+                "categoriaId": 2
+            """;
+
+        mockMvc.perform(put("/produtos/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("JSON inválido ou dados incompatíveis com o formato esperado."));
+
+        verifyNoInteractions(produtoService);
+    }
 }
