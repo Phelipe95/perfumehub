@@ -59,4 +59,16 @@ public class GlobalExceptionHandler {
                 .body(respostaDTO);
     }
 
+    @ExceptionHandler(ConflitoException.class)
+    public ResponseEntity<ErroRespostaDTO> tratarConflito(
+            ConflitoException exception
+    ) {
+        List<String> mensagens = List.of(exception.getMessage());
+
+        ErroRespostaDTO resposta = new ErroRespostaDTO(mensagens);
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(resposta);
+    }
 }

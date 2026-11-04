@@ -45,5 +45,13 @@ public class CategoriaController {
         return CategoriaRespostaDTO.fromEntity(categoria);
     }
 
+    @PutMapping("/{id}")
+    public CategoriaRespostaDTO atualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody CategoriaCadastroDTO dto
+    ) {
+        Categoria categoria = categoriaService.atualizar(id, dto);
 
+        return CategoriaRespostaDTO.fromEntity(categoria);
+    }
 }

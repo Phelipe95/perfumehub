@@ -2,6 +2,8 @@ package br.com.perfumehub.categoria;
 
 import jakarta.persistence.*;
 
+import java.util.Optional;
+
 @Entity
 @Table(name = "categoria")
 public class Categoria {
@@ -37,5 +39,17 @@ public class Categoria {
 
     public String getDescricao() {
         return descricao;
+    }
+
+    public void atualizar(
+            String nome,
+            String descricao
+    ) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("O nome da categoria é obrigatório.");
+        }
+
+        this.nome = nome;
+        this.descricao = descricao;
     }
 }

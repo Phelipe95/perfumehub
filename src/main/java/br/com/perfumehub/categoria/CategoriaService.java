@@ -1,5 +1,6 @@
 package br.com.perfumehub.categoria;
 
+import br.com.perfumehub.exception.ConflitoException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,5 +31,20 @@ public class CategoriaService {
     public Categoria buscarPorId(Long id) {
         return categoriaRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Categoria não encontrada."));
+    }
+
+    public Categoria atualizar(Long id, CategoriaCadastroDTO dto) {
+        Categoria categoria = buscarPorId(id);
+
+        if (categoriaRepository.existsByNomeAndIdNot(dto.nome(), id)) {
+            throw new ConflitoException("Já existe uma categoria com esse nome.");
+        }
+
+        categoria.atualizar(
+                dto.nome(),
+                dto.descricao()
+        );
+
+        return categoriaRepository.save(categoria);
     }
 }
