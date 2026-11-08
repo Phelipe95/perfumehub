@@ -54,4 +54,11 @@ public class CategoriaController {
 
         return CategoriaRespostaDTO.fromEntity(categoria);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        categoriaService.excluirPorId(id);
+
+        return ResponseEntity.noContent().build();
+    }
 }

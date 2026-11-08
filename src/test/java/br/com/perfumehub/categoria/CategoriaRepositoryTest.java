@@ -1,11 +1,15 @@
 package br.com.perfumehub.categoria;
 
+import br.com.perfumehub.produto.Produto;
+import br.com.perfumehub.produto.ProdutoRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,6 +20,9 @@ class CategoriaRepositoryTest {
 
     @Autowired
     private CategoriaRepository categoriaRepository;
+
+    @Autowired
+    private ProdutoRepository produtoRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -82,6 +89,64 @@ class CategoriaRepositoryTest {
                 categoriaRepository.existsByNomeAndIdNot(
                         "Feminino", masculino.getId()
                 )
+        );
+    }
+
+    @Test
+    void deveRetornarTrueQuandoCategoriaPossuiProdutos() {
+        Categoria categoria = categoriaRepository.saveAndFlush(
+                new Categoria(
+                        "Masculino",
+                        "Perfumes masculinos"
+                )
+        );
+
+        produtoRepository.saveAndFlush(
+                new Produto(
+                        "Malbec",
+                        new BigDecimal("180.00"),
+                        10,
+                        categoria
+                )
+        );
+
+        assertTrue(
+                produtoRepository.existsByCategoria_Id(categoria.getId())
+        );
+    }
+
+    @Test
+    void deveRetornarFalseQuandoCategoriaNaoPossuiProdutos() {
+        Categoria categoria = categoriaRepository.saveAndFlush(
+                new Categoria(
+                        "Masculino",
+                        "Perfumes masculinos"
+                )
+        );
+
+        assertFalse(
+                produtoRepository.existsByCategoria_Id(categoria.getId())
+        );
+    }
+
+    @Test
+    void deveExcluirCategoriaSemProdutosNoBanco() {
+        Categoria categoria = categoriaRepository.saveAndFlush(
+                new Categoria(
+                        "Masculino",
+                        "Perfumes masculinos"
+                )
+        );
+
+        Long idOriginal = categoria.getId();
+
+        categoriaRepository.delete(categoria);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertFalse(
+                categoriaRepository.existsById(idOriginal)
         );
     }
 }

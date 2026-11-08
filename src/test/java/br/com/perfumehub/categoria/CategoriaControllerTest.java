@@ -14,9 +14,9 @@ import java.util.NoSuchElementException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CategoriaController.class)
 class CategoriaControllerTest {
@@ -141,5 +141,43 @@ class CategoriaControllerTest {
                         .value("Já existe uma categoria com esse nome."));
 
         verify(categoriaService).atualizar(eq(1L), any(CategoriaCadastroDTO.class));
+    }
+
+    @Test
+    void deveExcluirCategoriaERetornar204() throws Exception {
+        mockMvc.perform(delete("/categorias/{id}", 1L))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(categoriaService).excluirPorId(1L);
+    }
+
+    @Test
+    void deveRetornar404AoExcluirCategoriaInexistente() throws Exception {
+        doThrow(new NoSuchElementException("Categoria não encontrada."))
+                .when(categoriaService)
+                .excluirPorId(99L);
+
+        mockMvc.perform(delete("/categorias/{id}", 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("Categoria não encontrada."));
+
+        verify(categoriaService).excluirPorId(99L);
+    }
+
+    @Test
+    void deveRetornar409AoExcluirCategoriaComProdutosVinculados() throws Exception {
+        doThrow(new ConflitoException(
+                "Não é possível excluir uma categoria com produtos vinculados."))
+                .when(categoriaService)
+                .excluirPorId(1L);
+
+        mockMvc.perform(delete("/categorias/{id}", 1L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("Não é possível excluir uma categoria com produtos vinculados."));
+
+        verify(categoriaService).excluirPorId(1L);
     }
 }

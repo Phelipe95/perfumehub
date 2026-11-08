@@ -1,6 +1,7 @@
 package br.com.perfumehub.categoria;
 
 import br.com.perfumehub.exception.ConflitoException;
+import br.com.perfumehub.produto.ProdutoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,6 +20,9 @@ class CategoriaServiceTest {
 
     @Mock
     private CategoriaRepository categoriaRepository;
+
+    @Mock
+    private ProdutoRepository produtoRepository;
 
     @InjectMocks
     private CategoriaService categoriaService;
@@ -97,5 +101,68 @@ class CategoriaServiceTest {
         assertEquals("Perfumes masculinos", categoria.getDescricao());
 
         verify(categoriaRepository, never()).save(any(Categoria.class));
+    }
+
+    @Test
+    void deveExcluirCategoriaSemProdutosVinculados() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(produtoRepository.existsByCategoria_Id(1L))
+                .thenReturn(false);
+
+        categoriaService.excluirPorId(1L);
+
+        verify(categoriaRepository).findById(1L);
+        verify(produtoRepository).existsByCategoria_Id(1L);
+        verify(categoriaRepository).delete(categoria);
+    }
+
+    @Test
+    void deveImpedirExclusaoDeCategoriaComProdutosVinculados() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(produtoRepository.existsByCategoria_Id(1L))
+                .thenReturn(true);
+
+        ConflitoException exception = assertThrows(
+                ConflitoException.class,
+                () -> categoriaService.excluirPorId(1L)
+        );
+
+        assertEquals(
+                "Não é possível excluir uma categoria com produtos vinculados.",
+                exception.getMessage()
+                );
+
+        verify(categoriaRepository).findById(1L);
+        verify(produtoRepository).existsByCategoria_Id(1L);
+        verify(categoriaRepository, never()).delete(any(Categoria.class));
+    }
+
+    @Test
+    void deveLancarExcecaoAoExcluirCategoriaInexistente() {
+        when(categoriaRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> categoriaService.excluirPorId(99L));
+
+        assertEquals("Categoria não encontrada.", exception.getMessage());
+
+        verify(categoriaRepository).findById(99L);
+        verifyNoInteractions(produtoRepository);
+        verify(categoriaRepository, never()).delete(any(Categoria.class));
     }
 }
