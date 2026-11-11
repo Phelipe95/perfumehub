@@ -4,8 +4,7 @@ import org.junit.jupiter.api.Test;
 import br.com.perfumehub.categoria.Categoria;
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ProdutoTest {
     @Test
@@ -356,5 +355,177 @@ class ProdutoTest {
         assertEquals(new BigDecimal("0.00"), produto.getPreco());
         assertEquals(0, produto.getQuantidadeEstoque());
         assertEquals(categoria, produto.getCategoria());
+    }
+
+    @Test
+    void deveRegistrarPrimeiraEntradaDeEstoque() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        produto.registrarEntrada(
+                10,
+                new BigDecimal("100.00")
+        );
+
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertEquals(new BigDecimal("100.000000"), produto.getCustoMedio());
+    }
+
+    @Test
+    void deveRecalcularCustoMedioAoRegistrarSegundaEntrada() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        produto.registrarEntrada(
+                2,
+                new BigDecimal("100.00"
+                )
+        );
+
+        produto.registrarEntrada(
+                10,
+                new BigDecimal("80.00"
+                )
+        );
+
+        assertEquals(12, produto.getQuantidadeEstoque());
+        assertEquals(new BigDecimal("83.333333"), produto.getCustoMedio());
+    }
+
+    @Test
+    void deveRejeitarEntradaQuandoEstoqueAtualTemCustoDesconhecido() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                5,
+                categoria
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> produto.registrarEntrada(2, new BigDecimal("80.00"))
+        );
+
+        assertEquals(5, produto.getQuantidadeEstoque());
+        assertNull(produto.getCustoMedio());
+    }
+
+    @Test
+    void deveRejeitarEntradaComQuantidadeZero() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> produto.registrarEntrada(0, new BigDecimal("80.00"))
+        );
+
+        assertEquals(0, produto.getQuantidadeEstoque());
+        assertNull(produto.getCustoMedio());
+    }
+
+    @Test
+    void deveRejeitarEntradaComCustoUnitarioNulo() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> produto.registrarEntrada(2, null)
+        );
+
+        assertEquals(0, produto.getQuantidadeEstoque());
+        assertNull(produto.getCustoMedio());
+    }
+
+    @Test
+    void deveRejeitarEntradaComCustoUnitarioNegativo() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> produto.registrarEntrada(2, new BigDecimal("-0.01"))
+        );
+
+        assertEquals(0, produto.getQuantidadeEstoque());
+        assertNull(produto.getCustoMedio());
+    }
+
+    @Test
+    void deveRejeitarEntradaQueUltrapasseOLimiteDeInt() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        BigDecimal custoUnitario = new BigDecimal("100.00");
+
+        produto.registrarEntrada(Integer.MAX_VALUE, custoUnitario);
+
+        assertThrows(
+                ArithmeticException.class,
+                () -> produto.registrarEntrada(1, custoUnitario)
+        );
+
+        assertEquals(Integer.MAX_VALUE, produto.getQuantidadeEstoque());
+        assertEquals(new BigDecimal("100.000000"), produto.getCustoMedio());
     }
 }
