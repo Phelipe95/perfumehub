@@ -1,0 +1,13 @@
+:root {
+    --color-background: #f6f4ef;
+    --color-surface: #fffefa;
+    --color-green: #284c38;
+    --color-text: #25382e;
+    --color-text-muted: #697468;
+    --color-selection: #e9eee1;
+    --color-border: #e5e6dc;
+    --color-danger: #a4493b;
+
+    --font-body: 'Segoe UI', sans-serif;
+    --font-heading: Georgia, serif;
+}

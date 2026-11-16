@@ -1,0 +1,22 @@
+.primary {
+  padding: 0.875rem 1.25rem;
+  color: var(--color-surface);
+  background-color: var(--color-green);
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.primary:hover { filter: brightness(1.1); }
+
+.secondary, .danger {
+  padding: 0.625rem 0.875rem;
+  background: transparent;
+  border: 0.0625rem solid var(--color-border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.secondary { color: var(--color-green); }
+.danger { color: var(--color-danger); }
+.secondary:hover, .danger:hover { background-color: var(--color-selection); }

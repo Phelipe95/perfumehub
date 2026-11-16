@@ -1,0 +1,55 @@
+.productCard {
+  overflow: hidden;
+  background-color: var(--color-surface);
+  border: 0.0625rem solid var(--color-border);
+  border-radius: 0.75rem;
+}
+
+.productVisual {
+  min-height: 10rem;
+  padding: 1rem;
+  background-color: var(--color-selection);
+}
+
+.productCategory {
+  display: inline-block;
+  padding: 0.375rem 0.625rem;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+}
+
+.productDetails {
+  padding: 1.25rem;
+}
+
+.productDetails h2 {
+  margin-bottom: 1rem;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.productSummary {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.productPrice {
+  color: var(--color-green);
+  font-weight: 600;
+}
+
+.productActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 0.0625rem solid var(--color-border);
+}

@@ -1,0 +1,36 @@
+.app {
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+.content {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding: 2.5rem 2rem;
+}
+
+.content h1 {
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: 2.75rem;
+  font-weight: 400;
+  letter-spacing: -0.0625rem;
+}
+
+.content p {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+@media (max-width: 48rem) {
+
+  .content {
+    padding: 2rem 1.25rem;
+  }
+
+  .content h1 {
+    font-size: 2.125rem;
+  }
+}

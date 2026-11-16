@@ -1,0 +1,43 @@
+.categoryRegistration {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.categorySelection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.categorySelection select {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.categorySelection button {
+  white-space: nowrap;
+}
+
+.newCategory {
+  padding: 1rem;
+  background-color: var(--color-selection);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.categoryNameRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.categoryNameRow input {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.categoryNameRow button {
+  flex: 0 0 auto;
+}

@@ -1,0 +1,47 @@
+:root {
+    font-family: var(--font-body);
+    color: var(--color-text);
+    background-color: var(--color-background);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-width: 20rem;
+}
+
+#root {
+    min-height: 100vh;
+}
+
+h1,
+h2,
+p {
+    margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    outline-offset: 0.25rem;
+}
+
+:focus-visible {
+    outline: 0.125rem solid var(--color-green);
+}
