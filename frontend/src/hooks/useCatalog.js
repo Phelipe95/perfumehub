@@ -63,5 +63,28 @@ export function useCatalog() {
     setCategories(current => [...current, category])
   }
 
-  return { products, categories, loading, error, addCategory };
+  function addProduct(createdProduct) {
+    const category = categories.find(
+        (category) => category.id === createdProduct.categoriaId,
+    );
+
+    const product = {
+      id: createdProduct.id,
+      name: createdProduct.nome,
+      price: createdProduct.preco,
+      quantity: createdProduct.quantidadeEstoque,
+      category: category?.nome ?? 'Categoria não encontrada',
+    };
+
+    setProducts((current) => [...current, product]);
+  }
+
+  return {
+    products,
+    categories,
+    loading,
+    error,
+    addCategory,
+    addProduct
+  };
 }

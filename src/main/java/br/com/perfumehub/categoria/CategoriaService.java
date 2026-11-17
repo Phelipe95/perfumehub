@@ -22,6 +22,10 @@ public class CategoriaService {
     }
 
     public Categoria cadastrar(CategoriaCadastroDTO dto) {
+        if (categoriaRepository.existsByNome(dto.nome())) {
+            throw new ConflitoException("Já existe uma categoria com esse nome.");
+        }
+
         Categoria categoria = new Categoria(
                 dto.nome(),
                 dto.descricao()

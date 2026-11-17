@@ -149,4 +149,17 @@ class CategoriaRepositoryTest {
                 categoriaRepository.existsById(idOriginal)
         );
     }
+
+    @Test
+    void deveVerificarSeExisteCategoriaComNome() {
+        categoriaRepository.saveAndFlush(
+                new Categoria(
+                        "Feminino",
+                        "Perfumes femininos"
+                )
+        );
+
+        assertTrue(categoriaRepository.existsByNome("Feminino"));
+        assertFalse(categoriaRepository.existsByNome("Categoria inexistente"));
+    }
 }

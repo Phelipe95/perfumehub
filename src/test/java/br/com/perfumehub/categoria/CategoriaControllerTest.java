@@ -14,6 +14,7 @@ import java.util.NoSuchElementException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -179,5 +180,25 @@ class CategoriaControllerTest {
                         .value("Não é possível excluir uma categoria com produtos vinculados."));
 
         verify(categoriaService).excluirPorId(1L);
+    }
+
+    @Test
+    void deveRetornar409AoCadastrarCategoriaComNomeJaUtilizado() throws Exception {
+        String json = """
+            {
+                "nome": "Feminino",
+                "descricao": "Perfumes femininos"
+            }
+            """;
+
+        when(categoriaService.cadastrar(any(CategoriaCadastroDTO.class)))
+                .thenThrow(new ConflitoException("Já existe uma categoria com esse nome."));
+
+        mockMvc.perform(post("/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("Já existe uma categoria com esse nome."));
     }
 }

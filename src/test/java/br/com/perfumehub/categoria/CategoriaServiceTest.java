@@ -165,4 +165,22 @@ class CategoriaServiceTest {
         verifyNoInteractions(produtoRepository);
         verify(categoriaRepository, never()).delete(any(Categoria.class));
     }
+
+    @Test
+    void deveRejeitarCadastroComNomeJaUtilizado() {
+        CategoriaCadastroDTO dto = new CategoriaCadastroDTO(
+                "Feminino",
+                "Perfumes femininos"
+        );
+
+        when(categoriaRepository.existsByNome(dto.nome()))
+                .thenReturn(true);
+
+        ConflitoException exception = assertThrows(ConflitoException.class,
+                () -> categoriaService.cadastrar(dto));
+
+        assertEquals("Já existe uma categoria com esse nome.", exception.getMessage());
+
+        verify(categoriaRepository, never()).save(any(Categoria.class));
+    }
 }

@@ -1,0 +1,87 @@
+.card {
+    overflow: hidden;
+    background-color: var(--color-surface);
+    border: 0.0625rem solid var(--color-border);
+    border-radius: 0.75rem;
+}
+
+.visual {
+    height: 10rem;
+}
+
+.content {
+    padding: 1.25rem;
+}
+
+.title {
+    width: 70%;
+    height: 1.75rem;
+    margin-bottom: 1rem;
+}
+
+.summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.price {
+    width: 5.5rem;
+    height: 1.25rem;
+}
+
+.quantity {
+    width: 3rem;
+    height: 1.25rem;
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 0.0625rem solid var(--color-border);
+}
+
+.button {
+    width: 4.5rem;
+    height: 2.75rem;
+}
+
+.visual,
+.title,
+.price,
+.quantity,
+.button {
+    background-color: var(--color-selection);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.title,
+.price,
+.quantity,
+.button {
+    border-radius: 0.375rem;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .visual,
+    .title,
+    .price,
+    .quantity,
+    .button {
+        animation: none;
+    }
+}

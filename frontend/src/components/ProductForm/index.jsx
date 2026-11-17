@@ -3,14 +3,63 @@ import { CategoryRegistration } from '../CategoryRegistration';
 import { DefaultButton } from '../DefaultButton';
 import styles from './styles.module.css';
 
-export function ProductForm({ categories, onCategoryCreated }) {
+export function ProductForm({ categories, onCategoryCreated, onProductCreated }) {
   const [registerInitialPurchase, setRegisterInitialPurchase] = useState(false);
   const [initialQuantity, setInitialQuantity] = useState(1);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [productError, setProductError] = useState('');
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+
+    const productData = {
+      nome: formData.get('nome').trim(),
+      preco: Number(formData.get('preco')),
+      quantidadeEstoque: 0,
+      categoriaId: Number(formData.get('categoriaId')),
+    };
+
+    setSavingProduct(true);
+    setProductError('');
+
+    try {
+      const response = await fetch('api/produtos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(productData),
+      });
+
+      if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+
+        throw new Error(
+            failure?.erros?.join(' ') || 'Não foi possível cadastrar o produto.',
+        );
+      }
+
+      const createdProduct = await response.json();
+
+      onProductCreated(createdProduct);
+
+    } catch (failure) {
+      setProductError(
+          failure instanceof TypeError
+          ? 'Não foi possível conectar ao servidor.'
+              : failure.message,
+      );
+    } finally {
+      setSavingProduct(false);
+    }
+  }
 
   return (
     <form
       className={styles.productForm}
-      onSubmit={(event) => event.preventDefault()}
+      onSubmit={handleSubmit}
     >
       <label>
         <span>Nome do produto</span>
@@ -116,8 +165,16 @@ export function ProductForm({ categories, onCategoryCreated }) {
         </fieldset>
       )}
 
-      <DefaultButton type='submit' variant='primary'>
-        Cadastrar produto
+      {productError && (
+          <p role='alert'>{productError}</p>
+      )}
+
+      <DefaultButton
+          type='submit'
+          variant='primary'
+          disabled={savingProduct}
+      >
+        {savingProduct ? 'Salvando...' : 'Cadastrar produto'}
       </DefaultButton>
     </form>
   );
