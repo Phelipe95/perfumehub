@@ -19,13 +19,20 @@ export function ProductForm({ categories, onCategoryCreated, onProductCreated })
       preco: Number(formData.get('preco')),
       quantidadeEstoque: 0,
       categoriaId: Number(formData.get('categoriaId')),
+      compraInicial: registerInitialPurchase
+        ? {
+            dataCompra: formData.get('dataCompra'),
+            quantidade: Number(formData.get('quantidade')),
+            custoUnitario: Number(formData.get('custoUnitario')),
+          }
+        : null,
     };
 
     setSavingProduct(true);
     setProductError('');
 
     try {
-      const response = await fetch('api/produtos', {
+      const response = await fetch('/api/produtos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -2,7 +2,11 @@ package br.com.perfumehub.produto;
 
 import br.com.perfumehub.categoria.Categoria;
 import br.com.perfumehub.categoria.CategoriaRepository;
+import br.com.perfumehub.estoque.CompraInicialDTO;
+import br.com.perfumehub.estoque.EntradaEstoqueService;
+import br.com.perfumehub.exception.ConflitoException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -12,13 +16,16 @@ public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
     private final CategoriaRepository categoriaRepository;
+    private final EntradaEstoqueService entradaEstoqueService;
 
     public ProdutoService(
             ProdutoRepository produtoRepository,
-            CategoriaRepository categoriaRepository
+            CategoriaRepository categoriaRepository,
+            EntradaEstoqueService entradaEstoqueService
     ) {
         this.produtoRepository = produtoRepository;
         this.categoriaRepository = categoriaRepository;
+        this.entradaEstoqueService = entradaEstoqueService;
     }
 
     public Produto buscarPorId(Long id) {
@@ -39,7 +46,14 @@ public class ProdutoService {
         }
     }
 
+    @Transactional
     public Produto cadastrar(ProdutoCadastroDTO dto) {
+        if (dto.compraInicial() != null && dto.quantidadeEstoque() != 0) {
+            throw new ConflitoException(
+                    "Ao registrar uma compra inicial, o estoque inicial deve ser zero."
+            );
+        }
+
         Categoria categoria = categoriaRepository
                 .findById(dto.categoriaId())
                 .orElseThrow(() ->
@@ -52,10 +66,30 @@ public class ProdutoService {
                 dto.quantidadeEstoque(),
                 categoria
         );
-        return produtoRepository.save(produto);
+
+        Produto produtoSalvo = produtoRepository.save(produto);
+
+        CompraInicialDTO compraInicial = dto.compraInicial();
+
+        if (compraInicial != null) {
+            entradaEstoqueService.registrar(
+                    produtoSalvo.getId(),
+                    compraInicial.dataCompra(),
+                    compraInicial.quantidade(),
+                    compraInicial.custoUnitario()
+            );
+        }
+
+        return produtoSalvo;
     }
 
     public Produto atualizar(Long id, ProdutoCadastroDTO dto) {
+        if (dto.compraInicial() != null) {
+            throw new ConflitoException(
+                    "A compra inicial só pode ser informada no cadastro do produto."
+            );
+        }
+
         Produto produto = buscarPorId(id);
 
         Categoria categoria = categoriaRepository

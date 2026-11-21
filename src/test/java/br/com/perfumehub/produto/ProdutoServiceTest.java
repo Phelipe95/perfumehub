@@ -2,12 +2,17 @@ package br.com.perfumehub.produto;
 
 import br.com.perfumehub.categoria.Categoria;
 import br.com.perfumehub.categoria.CategoriaRepository;
+import br.com.perfumehub.estoque.CompraInicialDTO;
+import br.com.perfumehub.estoque.EntradaEstoqueService;
+import br.com.perfumehub.exception.ConflitoException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.math.BigDecimal;
 import java.util.NoSuchElementException;
@@ -24,6 +29,9 @@ class ProdutoServiceTest {
 
     @Mock
     private CategoriaRepository categoriaRepository;
+
+    @Mock
+    private EntradaEstoqueService entradaEstoqueService;
 
     @InjectMocks
     private ProdutoService produtoService;
@@ -131,7 +139,8 @@ class ProdutoServiceTest {
                 "Malbec",
                 new BigDecimal("150.00"),
                 10,
-                1L
+                1L,
+                null
         );
 
         when(categoriaRepository.findById(1L))
@@ -149,6 +158,7 @@ class ProdutoServiceTest {
 
         verify(categoriaRepository).findById(1L);
         verify(produtoRepository).save(any(Produto.class));
+        verifyNoInteractions(entradaEstoqueService);
     }
 
     @Test
@@ -207,7 +217,8 @@ class ProdutoServiceTest {
                 "Malbec",
                 new BigDecimal("150.00"),
                 10,
-                99L
+                99L,
+                null
         );
 
         assertThrows(
@@ -242,7 +253,8 @@ class ProdutoServiceTest {
                 "Lily",
                 new BigDecimal("180.00"),
                 5,
-                2L
+                2L,
+                null
         );
 
         when(produtoRepository.findById(1L))
@@ -272,7 +284,8 @@ class ProdutoServiceTest {
                 "Lily",
                 new BigDecimal("180.00"),
                 5,
-                2L
+                2L,
+                null
         );
 
         when(produtoRepository.findById(99L))
@@ -308,7 +321,8 @@ class ProdutoServiceTest {
                 "Lily",
                 new BigDecimal("180.00"),
                 5,
-                99L
+                99L,
+                null
         );
 
         when(produtoRepository.findById(1L))
@@ -331,5 +345,119 @@ class ProdutoServiceTest {
         verify(produtoRepository).findById(1L);
         verify(categoriaRepository).findById(99L);
         verify(produtoRepository, never()).save(any(Produto.class));
+    }
+
+    @Test
+    void deveRejeitarCompraInicialComEstoqueInicialDiferenteDeZero() {
+        CompraInicialDTO compraInicial = new CompraInicialDTO(
+                LocalDate.of(2026,11,21),
+                10,
+                new BigDecimal("100.00")
+        );
+
+        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+                "Malbec",
+                new BigDecimal("100.00"),
+                5,
+                1L,
+                compraInicial
+        );
+
+        ConflitoException exception = assertThrows(
+                ConflitoException.class,
+                () -> produtoService.cadastrar(dto)
+        );
+
+        assertEquals(
+                "Ao registrar uma compra inicial, o estoque inicial deve ser zero.",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(
+                categoriaRepository,
+                produtoRepository,
+                entradaEstoqueService
+        );
+    }
+
+    @Test
+    void deveCadastrarProdutoComCompraInicial() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        CompraInicialDTO compraInicial = new CompraInicialDTO(
+                LocalDate.of(2026,11,21),
+                10,
+                new BigDecimal("100.00")
+        );
+
+        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+                "Malbec",
+                new BigDecimal("100.00"),
+                0,
+                1L,
+                compraInicial
+        );
+
+        when(categoriaRepository.findById(1L))
+                .thenReturn(Optional.of(categoria));
+
+        when(produtoRepository.save(any(Produto.class)))
+                .thenAnswer(invocation -> {
+                    Produto produto = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(produto, "id", 2L);
+                    return produto;
+                });
+
+        Produto resultado = produtoService.cadastrar(dto);
+
+        assertEquals(2L, resultado.getId());
+        assertEquals("Malbec", resultado.getNome());
+        assertEquals(new BigDecimal("100.00"), resultado.getPreco());
+        assertEquals(categoria, resultado.getCategoria());
+
+        verify(produtoRepository).save(any(Produto.class));
+
+        verify(entradaEstoqueService).registrar(
+                2L,
+                compraInicial.dataCompra(),
+                compraInicial.quantidade(),
+                compraInicial.custoUnitario()
+        );
+    }
+
+    @Test
+    void deveRejeitarCompraInicialNaAtualizacaoDoProduto() {
+        CompraInicialDTO compraInicial = new CompraInicialDTO(
+                LocalDate.of(2026,11,21),
+                10,
+                new BigDecimal("100.00")
+        );
+
+        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+                "Malbec",
+                new BigDecimal("100.00"),
+                0,
+                1L,
+                compraInicial
+        );
+
+        ConflitoException exception = assertThrows(
+                ConflitoException.class,
+                () -> produtoService.atualizar(1L, dto)
+        );
+
+        assertEquals(
+                "A compra inicial só pode ser informada no cadastro do produto.",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(
+                produtoRepository,
+                categoriaRepository,
+                entradaEstoqueService
+        );
     }
 }

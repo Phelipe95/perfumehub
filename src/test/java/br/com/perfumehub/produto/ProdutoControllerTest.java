@@ -1,6 +1,8 @@
 package br.com.perfumehub.produto;
 
 import br.com.perfumehub.categoria.Categoria;
+import br.com.perfumehub.estoque.CompraInicialDTO;
+import br.com.perfumehub.exception.ConflitoException;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +12,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.NoSuchElementException;
 
 import static org.hamcrest.Matchers.hasItem;
@@ -183,7 +186,8 @@ class ProdutoControllerTest {
                 "Lily",
                 new BigDecimal("180.00"),
                 5,
-                2L
+                2L,
+                null
         );
 
         verify(produtoService).atualizar(1L, dtoEsperado);
@@ -254,5 +258,127 @@ class ProdutoControllerTest {
                         .value("Produto não encontrado."));
 
         verify(produtoService).excluirPorId(99L);
+    }
+
+    @Test
+    void deveCadastrarProdutoComCompraInicialERetornar201() throws Exception {
+        String json = """
+        {
+            "nome": "Malbec",
+            "preco": 150.00,
+            "quantidadeEstoque": 0,
+            "categoriaId": 1,
+            "compraInicial": {
+                "dataCompra": "2026-11-21",
+                "quantidade": 10,
+                "custoUnitario": 100.00
+            }
+        }
+        """;
+
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        ReflectionTestUtils.setField(categoria, "id", 1L);
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        produto.registrarEntrada(10, new BigDecimal("100.00"));
+
+        ReflectionTestUtils.setField(produto, "id", 2L);
+
+        when(produtoService.cadastrar(any(ProdutoCadastroDTO.class)))
+                .thenReturn(produto);
+
+        mockMvc.perform(post("/produtos")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.nome").value("Malbec"))
+                .andExpect(jsonPath("$.preco").value(150.00))
+                .andExpect(jsonPath("$.quantidadeEstoque").value(10))
+                .andExpect(jsonPath("$.categoriaId").value(1));
+
+        CompraInicialDTO compraEsperada = new CompraInicialDTO(
+                LocalDate.of(2026,11,21),
+                10,
+                new BigDecimal("100.00")
+        );
+
+        ProdutoCadastroDTO dtoEsperado = new ProdutoCadastroDTO(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                1L,
+                compraEsperada
+        );
+
+        verify(produtoService).cadastrar(dtoEsperado);
+    }
+
+    @Test
+    void deveRetornar400AoCadastrarProdutoComCompraInicialInvalida() throws Exception {
+        String json = """
+        {
+            "nome": "Malbec",
+            "preco": 150.00,
+            "quantidadeEstoque": 0,
+            "categoriaId": 1,
+            "compraInicial": {
+                "dataCompra": null,
+                "quantidade": 0,
+                "custoUnitario": -0.01
+            }
+        }
+        """;
+
+        mockMvc.perform(post("/produtos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.length()").value(3))
+                .andExpect(jsonPath("$.erros").value(hasItem("A data da compra é obrigatória.")))
+                .andExpect(jsonPath("$.erros").value(hasItem("A quantidade deve ser maior que zero.")))
+                .andExpect(jsonPath("$.erros").value(hasItem("O custo unitário não pode ser negativo.")));
+
+        verifyNoInteractions(produtoService);
+    }
+
+    @Test
+    void deveRetornar409AoCadastrarCompraInicialComEstoqueNaoZero() throws Exception {
+        String json = """
+        {
+            "nome": "Malbec",
+            "preco": 150.00,
+            "quantidadeEstoque": 5,
+            "categoriaId": 1,
+            "compraInicial": {
+                  "dataCompra": "2026-11-21",
+                  "quantidade": 10,
+                  "custoUnitario": 100.00
+            }
+        }
+        """;
+
+        when(produtoService.cadastrar(any(ProdutoCadastroDTO.class)))
+                .thenThrow(new ConflitoException(
+                        "Ao registrar uma compra inicial, o estoque inicial deve ser zero."
+                ));
+
+        mockMvc.perform(post("/produtos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erros[0]").value("Ao registrar uma compra inicial, o estoque inicial deve ser zero."));
+
+        verify(produtoService).cadastrar(any(ProdutoCadastroDTO.class));
     }
 }
