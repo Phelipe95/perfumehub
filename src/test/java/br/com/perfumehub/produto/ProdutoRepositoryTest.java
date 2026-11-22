@@ -164,7 +164,7 @@ class ProdutoRepositoryTest {
     }
 
     @Test
-    void deveAtualizarTodosOsDadosDoProduto() {
+    void deveAtualizarDadosDoProdutoPreservandoEstoque() {
         Categoria categoriaOriginal = new Categoria(
                 "Masculino",
                 "Perfumes masculinos"
@@ -194,7 +194,6 @@ class ProdutoRepositoryTest {
         produtoSalvo.atualizar(
                 "Lily",
                 new BigDecimal("180.00"),
-                5,
                 novaCategoriaSalva
         );
 
@@ -208,7 +207,7 @@ class ProdutoRepositoryTest {
         assertEquals(idOriginal, produtoEncontrado.getId());
         assertEquals("Lily", produtoEncontrado.getNome());
         assertEquals(new BigDecimal("180.00"), produtoEncontrado.getPreco());
-        assertEquals(5, produtoEncontrado.getQuantidadeEstoque());
+        assertEquals(10, produtoEncontrado.getQuantidadeEstoque());
         assertEquals(novaCategoriaSalva.getId(), produtoEncontrado.getCategoria().getId());
     }
 }

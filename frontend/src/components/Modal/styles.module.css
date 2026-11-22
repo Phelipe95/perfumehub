@@ -1,4 +1,4 @@
-.purchaseDialog {
+.modal {
     width: min(32rem, calc(100% - 2rem));
     max-height: calc(100dvh - 2rem);
     padding: 1.5rem;
@@ -8,18 +8,18 @@
     border-radius: 0.75rem;
 }
 
-.purchaseDialog::backdrop {
+.modal::backdrop {
     background-color: rgb(37 56 46 / 45%);
 }
 
-.dialogHeader {
+.header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
 }
 
-.dialogHeader h2 {
+.header h2 {
     font-family: var(--font-heading);
     font-size: 1.75rem;
     font-weight: 400;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createCategory } from '../../services/categoryService';
 import { DefaultButton } from '../DefaultButton';
 import styles from './styles.module.css';
 
@@ -7,7 +8,7 @@ export function CategoryRegistration({ categories, onCategoryCreated }) {
   const [categoryName, setCategoryName] = useState('');
   const [savingCategory, setSavingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
 
   async function handleSaveCategory() {
       const name = categoryName.trim();
@@ -21,24 +22,8 @@ export function CategoryRegistration({ categories, onCategoryCreated }) {
       setCategoryError('');
 
       try {
-          const response = await fetch('/api/categorias', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ nome: name }),
-          });
+          const createdCategory = await createCategory({ nome: name });
 
-          if (!response.ok) {
-              const failure = await response.json().catch(() => null);
-
-              throw new Error(
-                  failure?.erros?.join(' ') ||
-                  `Não foi possível salvar a categoria (HTTP ${response.status}).`,
-              );
-          }
-
-          const createdCategory = await response.json();
           onCategoryCreated(createdCategory);
           setSelectedCategoryId(String(createdCategory.id));
 

@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface EntradaEstoqueRepository extends JpaRepository<EntradaEstoque, Long> {
     List<EntradaEstoque> findByProduto_Id(Long produtoId);
+
+    boolean existsByProduto_Id(Long produtoId);
 }

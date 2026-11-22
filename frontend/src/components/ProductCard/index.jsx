@@ -1,4 +1,5 @@
 import { DefaultButton } from '../DefaultButton';
+import { formatCurrency } from '../../utils/formatCurrency';
 import styles from './styles.module.css';
 
 export function ProductCard({ category, name, price, quantity }) {
@@ -13,10 +14,7 @@ export function ProductCard({ category, name, price, quantity }) {
 
         <div className={styles.productSummary}>
           <span className={styles.productPrice}>
-            {price.toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            })}
+            {formatCurrency(price)}
           </span>
           <span>{quantity}un</span>
         </div>

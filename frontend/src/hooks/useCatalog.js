@@ -1,4 +1,20 @@
 import { useEffect, useState } from 'react';
+import { getProducts } from '../services/productService';
+import { getCategories } from '../services/categoryService';
+
+function adaptProduct(product, categories) {
+  const category = categories.find(
+      (category) => category.id === product.categoriaId,
+  );
+
+  return {
+    id: product.id,
+    name: product.nome,
+    price: product.preco,
+    quantity: product.quantidadeEstoque,
+    category: category?.nome ?? 'Categoria não encontrada.',
+  };
+}
 
 export function useCatalog() {
   const [products, setProducts] = useState([]);
@@ -11,31 +27,14 @@ export function useCatalog() {
 
     async function loadCatalog() {
       try {
-        const [productsResponse, categoriesResponse] = await Promise.all([
-          fetch('/api/produtos', { signal: controller.signal }),
-          fetch('/api/categorias', { signal: controller.signal }),
+        const [productsData, categoriesData] = await Promise.all([
+          getProducts(controller.signal),
+          getCategories(controller.signal),
         ]);
 
-        if (!productsResponse.ok || !categoriesResponse.ok) {
-          throw new Error('Não foi possível carregar o catálogo.');
-        }
-
-        const productsData = await productsResponse.json();
-        const categoriesData = await categoriesResponse.json();
-
-        const adaptedProducts = productsData.map(product => {
-          const category = categoriesData.find(
-            item => item.id === product.categoriaId,
-          );
-
-          return {
-            id: product.id,
-            name: product.nome,
-            price: product.preco,
-            quantity: product.quantidadeEstoque,
-            category: category?.nome ?? 'Categoria não encontrada.',
-          };
-        });
+        const adaptedProducts = productsData.map((product) =>
+            adaptProduct(product, categoriesData)
+        );
 
         if (controller.signal.aborted) return;
 
@@ -60,21 +59,11 @@ export function useCatalog() {
   }, []);
 
   function addCategory(category) {
-    setCategories(current => [...current, category])
+    setCategories(current => [...current, category]);
   }
 
   function addProduct(createdProduct) {
-    const category = categories.find(
-        (category) => category.id === createdProduct.categoriaId,
-    );
-
-    const product = {
-      id: createdProduct.id,
-      name: createdProduct.nome,
-      price: createdProduct.preco,
-      quantity: createdProduct.quantidadeEstoque,
-      category: category?.nome ?? 'Categoria não encontrada',
-    };
+    const product = adaptProduct(createdProduct, categories);
 
     setProducts((current) => [...current, product]);
   }

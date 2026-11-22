@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { createProduct } from '../../services/productService';
 import { CategoryRegistration } from '../CategoryRegistration';
 import { DefaultButton } from '../DefaultButton';
+import { QuantityInput } from '../QuantityInput';
 import styles from './styles.module.css';
 
 export function ProductForm({ categories, onCategoryCreated, onProductCreated }) {
@@ -32,26 +34,8 @@ export function ProductForm({ categories, onCategoryCreated, onProductCreated })
     setProductError('');
 
     try {
-      const response = await fetch('/api/produtos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(productData),
-      });
-
-      if (!response.ok) {
-        const failure = await response.json().catch(() => null);
-
-        throw new Error(
-            failure?.erros?.join(' ') || 'Não foi possível cadastrar o produto.',
-        );
-      }
-
-      const createdProduct = await response.json();
-
+      const createdProduct = await createProduct(productData);
       onProductCreated(createdProduct);
-
     } catch (failure) {
       setProductError(
           failure instanceof TypeError
@@ -125,49 +109,13 @@ export function ProductForm({ categories, onCategoryCreated, onProductCreated })
           <div className={styles.quantityField}>
             <label htmlFor='initial-quantity'>Quantidade comprada</label>
 
-            <div className={styles.quantityControl}>
-              <button
-                type='button'
-                aria-label='Diminuir quantidade'
-                disabled={initialQuantity === '' || initialQuantity <= 1}
-                onClick={() =>
-                  setInitialQuantity((current) => Math.max(1, current - 1))
-                }
-              >
-                -
-              </button>
-
-              <input
+            <QuantityInput
                 id='initial-quantity'
                 name='quantidade'
-                type='number'
-                min='1'
-                max='2147483647'
-                step='1'
-                required
                 value={initialQuantity}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setInitialQuantity(value === '' ? '' : Number(value));
-                }}
-              />
+                onChange={setInitialQuantity}
+            />
 
-              <button
-                type='button'
-                aria-label='Aumentar quantidade'
-                disabled={
-                  initialQuantity !== '' &&
-                  initialQuantity >= 2147483647
-                }
-                onClick={() =>
-                  setInitialQuantity((current) =>
-                    current === '' ? 1 : Math.min(2147483647, current + 1)
-                  )
-                }
-              >
-                +
-              </button>
-            </div>
           </div>
         </fieldset>
       )}

@@ -98,12 +98,11 @@ class ProdutoControllerTest {
             {
                 "nome": "Lily",
                 "preco": 180.00,
-                "quantidadeEstoque": 5,
                 "categoriaId": 2
             }
             """;
 
-        when(produtoService.atualizar(eq(99L), any(ProdutoCadastroDTO.class)))
+        when(produtoService.atualizar(eq(99L), any(ProdutoAtualizacaoDTO.class)))
                 .thenThrow(new NoSuchElementException("Produto não encontrado."));
 
         mockMvc.perform(put("/produtos/{id}", 99L)
@@ -120,7 +119,6 @@ class ProdutoControllerTest {
                 {
                     "nome": "",
                     "preco": -50,
-                    "quantidadeEstoque": -3,
                     "categoriaId": null
                 }
                 """;
@@ -129,13 +127,11 @@ class ProdutoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erros.length()").value(4))
+                .andExpect(jsonPath("$.erros.length()").value(3))
                 .andExpect(jsonPath("$.erros")
                         .value(hasItem("O nome do produto é obrigatório.")))
                 .andExpect(jsonPath("$.erros")
                         .value(hasItem("O valor não pode ser negativo.")))
-                .andExpect(jsonPath("$.erros")
-                        .value(hasItem("O estoque não pode ser negativo.")))
                 .andExpect(jsonPath("$.erros")
                         .value(hasItem("A categoria do produto é obrigatória.")));
 
@@ -148,7 +144,6 @@ class ProdutoControllerTest {
                 {
                     "nome": "Lily",
                     "preco": 180.00,
-                    "quantidadeEstoque": 5,
                     "categoriaId": 2
                 }
                 """;
@@ -169,7 +164,7 @@ class ProdutoControllerTest {
 
         ReflectionTestUtils.setField(produto, "id", 1L);
 
-        when(produtoService.atualizar(eq(1L), any(ProdutoCadastroDTO.class)))
+        when(produtoService.atualizar(eq(1L), any(ProdutoAtualizacaoDTO.class)))
                 .thenReturn(produto);
 
         mockMvc.perform(put("/produtos/{id}", 1L)
@@ -182,12 +177,10 @@ class ProdutoControllerTest {
                 .andExpect(jsonPath("$.quantidadeEstoque").value(5))
                 .andExpect(jsonPath("$.categoriaId").value(2));
 
-        ProdutoCadastroDTO dtoEsperado = new ProdutoCadastroDTO(
+        ProdutoAtualizacaoDTO dtoEsperado = new ProdutoAtualizacaoDTO(
                 "Lily",
                 new BigDecimal("180.00"),
-                5,
-                2L,
-                null
+                2L
         );
 
         verify(produtoService).atualizar(1L, dtoEsperado);
@@ -199,12 +192,11 @@ class ProdutoControllerTest {
             {
                 "nome": "Lily",
                 "preco": 180.00,
-                "quantidadeEstoque": 5,
                 "categoriaId": 99
             }
             """;
 
-        when(produtoService.atualizar(eq(1L), any(ProdutoCadastroDTO.class)))
+        when(produtoService.atualizar(eq(1L), any(ProdutoAtualizacaoDTO.class)))
                 .thenThrow(new NoSuchElementException("Categoria não encontrada."));
 
         mockMvc.perform(put("/produtos/{id}", 1L)
@@ -222,7 +214,6 @@ class ProdutoControllerTest {
             {
                 "nome": "Lily",
                 "preco": 180.00,
-                "quantidadeEstoque": 5,
                 "categoriaId": 2
             """;
 
@@ -380,5 +371,48 @@ class ProdutoControllerTest {
                 .andExpect(jsonPath("$.erros[0]").value("Ao registrar uma compra inicial, o estoque inicial deve ser zero."));
 
         verify(produtoService).cadastrar(any(ProdutoCadastroDTO.class));
+    }
+
+    @Test
+    void deveRetornar400AoCadastrarProdutoComNomeEPrecoAcimaDosLimites()
+            throws Exception {
+        String json = """
+            {
+                "nome": "%s",
+                "preco": 100000000.00,
+                "quantidadeEstoque": 0,
+                "categoriaId": 1
+            }
+            """.formatted("a".repeat(151));
+
+        mockMvc.perform(post("/produtos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.length()").value(2))
+                .andExpect(jsonPath("$.erros").value(hasItem(
+                        "O nome do produto deve ter no máximo 150 caracteres."
+                )))
+                .andExpect(jsonPath("$.erros").value(hasItem(
+                        "O preço do produto deve ter até 8 dígitos inteiros e 2 casas decimais."
+                )));
+
+        verifyNoInteractions(produtoService);
+    }
+
+    @Test
+    void deveRetornar409AoExcluirProdutoComComprasRegistradas() throws Exception {
+        doThrow(new ConflitoException(
+                "Não é possível excluir um produto com compras registradas."
+        ))
+                .when(produtoService)
+                .excluirPorId(1L);
+
+        mockMvc.perform(delete("/produtos/{id}", 1L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("Não é possível excluir um produto com compras registradas."));
+
+        verify(produtoService).excluirPorId(1L);
     }
 }

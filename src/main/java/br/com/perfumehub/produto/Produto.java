@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 import br.com.perfumehub.categoria.Categoria;
+import br.com.perfumehub.exception.ConflitoException;
 
 @Entity
 @Table(name = "produto")
@@ -38,12 +39,10 @@ public class Produto {
             int quantidadeEstoque,
             Categoria categoria
     ) {
-        if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("O nome é obrigatório.");
-        }
-        if (preco == null || preco.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Preço inválido.");
-        }
+        validarNome(nome);
+
+        validarPreco(preco);
+
         if (quantidadeEstoque < 0) {
             throw new IllegalArgumentException("A quantidade não pode ser negativa.");
         }
@@ -82,9 +81,7 @@ public class Produto {
     }
 
     public void alterarPreco(BigDecimal novoPreco) {
-        if (novoPreco == null || novoPreco.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("O preço não pode ser negativo ou nulo.");
-        }
+        validarPreco(novoPreco);
 
         this.preco = novoPreco;
     }
@@ -92,21 +89,11 @@ public class Produto {
     public void atualizar(
             String nome,
             BigDecimal preco,
-            int quantidadeEstoque,
             Categoria categoria
     ) {
 
-        if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("O nome é obrigatório.");
-        }
-
-        if (preco == null || preco.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Preço inválido.");
-        }
-
-        if (quantidadeEstoque < 0) {
-            throw new IllegalArgumentException("A quantidade não pode ser negativa.");
-        }
+        validarNome(nome);
+        validarPreco(preco);
 
         if (categoria == null) {
             throw new IllegalArgumentException("A categoria é obrigatória.");
@@ -114,7 +101,6 @@ public class Produto {
 
         this.nome = nome;
         this.preco = preco;
-        this.quantidadeEstoque = quantidadeEstoque;
         this.categoria = categoria;
     }
 
@@ -129,10 +115,21 @@ public class Produto {
             throw new IllegalArgumentException("Custo unitário inválido");
         }
         if (quantidadeEstoque > 0 && custoMedio == null) {
-            throw new IllegalStateException("O estoque atual possui custo desconhecido.");
+            throw new ConflitoException(
+                    "O estoque atual possui custo desconhecido."
+            );
         }
 
-        int novoSaldo = Math.addExact(quantidadeEstoque, quantidade);
+        int novoSaldo;
+
+        try {
+            novoSaldo = Math.addExact(quantidadeEstoque, quantidade);
+        } catch (ArithmeticException exception) {
+            throw new ConflitoException(
+                    "A entrada ultrapassa o limite de quantidade em estoque."
+            );
+        }
+
         BigDecimal novoCustoMedio;
 
         if (quantidadeEstoque == 0) {
@@ -150,5 +147,32 @@ public class Produto {
 
         this.quantidadeEstoque = novoSaldo;
         this.custoMedio = novoCustoMedio;
+    }
+
+    private static void validarNome(String nome) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("O nome é obrigatório.");
+        }
+
+        if (nome.length() > 150) {
+            throw new IllegalArgumentException(
+                    "O nome do produto deve ter no máximo 150 caracteres."
+            );
+        }
+    }
+
+    private static void validarPreco(BigDecimal preco) {
+        if (preco == null || preco.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Preço inválido.");
+        }
+
+        if (
+                preco.compareTo(new BigDecimal("99999999.99")) > 0 ||
+                        preco.scale() > 2
+        ) {
+            throw new IllegalArgumentException(
+                    "O preço do produto deve ter até 8 dígitos inteiros e 2 casas decimais."
+            );
+        }
     }
 }

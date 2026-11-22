@@ -1,6 +1,7 @@
 import styles from './styles.module.css';
 import { DefaultButton } from '../DefaultButton';
 import { PurchaseItemCard } from '../PurchaseItemCard';
+import { QuantityInput } from '../QuantityInput';
 import { useState } from 'react';
 
 function getTodayDate() {
@@ -29,6 +30,14 @@ export function PurchaseForm({ products, onClose }) {
         : products.filter((product) =>
             product.name.toLocaleLowerCase('pt-BR').includes(normalizedSearch)
         );
+
+    function resetItemForm() {
+        setProductSearch('');
+        setSelectedProduct(null);
+        setUnitCost('');
+        setQuantity(1);
+        setItemError('');
+    }
 
     function handleSubmit(event) {
         event.preventDefault();
@@ -74,10 +83,7 @@ export function PurchaseForm({ products, onClose }) {
 
         setItems((current) => [...current, item]);
 
-        setProductSearch('');
-        setSelectedProduct(null);
-        setUnitCost('');
-        setQuantity(1);
+        resetItemForm();
         setShowItemForm(false);
     }
 
@@ -93,11 +99,7 @@ export function PurchaseForm({ products, onClose }) {
             return;
         }
 
-        setProductSearch('');
-        setSelectedProduct(null);
-        setUnitCost('');
-        setQuantity(1);
-        setItemError('');
+        resetItemForm();
         setShowItemForm(false);
     }
 
@@ -193,44 +195,12 @@ export function PurchaseForm({ products, onClose }) {
                     <div className={styles.quantityField}>
                         <label htmlFor='purchase-quantity'>Quantidade comprada</label>
 
-                        <div className={styles.quantityControl}>
-                            <button
-                                type='button'
-                                aria-label='Diminuir quantidade'
-                                disabled={quantity === '' || quantity <= 1}
-                                onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                            >
-                                −
-                            </button>
-
-                            <input
-                                id='purchase-quantity'
-                                name='quantidade'
-                                type='number'
-                                min='1'
-                                max='2147483647'
-                                step='1'
-                                required
-                                value={quantity}
-                                onChange={(event) => {
-                                    const value = event.target.value;
-                                    setQuantity(value === '' ? '' : Number(value));
-                                }}
-                            />
-
-                            <button
-                                type='button'
-                                aria-label='Aumentar quantidade'
-                                disabled={quantity !== '' && quantity >= 2147483647}
-                                onClick={() =>
-                                    setQuantity((current) =>
-                                        current === '' ? 1 : Math.min(2147483647, current + 1)
-                                    )
-                                }
-                            >
-                                +
-                            </button>
-                        </div>
+                        <QuantityInput
+                            id='purchase-quantity'
+                            name='quantidade'
+                            value={quantity}
+                            onChange={setQuantity}
+                        />
                     </div>
 
                     {itemError && (

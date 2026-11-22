@@ -3,6 +3,7 @@ package br.com.perfumehub.produto;
 import br.com.perfumehub.categoria.Categoria;
 import br.com.perfumehub.categoria.CategoriaRepository;
 import br.com.perfumehub.estoque.CompraInicialDTO;
+import br.com.perfumehub.estoque.EntradaEstoqueRepository;
 import br.com.perfumehub.estoque.EntradaEstoqueService;
 import br.com.perfumehub.exception.ConflitoException;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ class ProdutoServiceTest {
 
     @Mock
     private EntradaEstoqueService entradaEstoqueService;
+
+    @Mock
+    private EntradaEstoqueRepository entradaEstoqueRepository;
 
     @InjectMocks
     private ProdutoService produtoService;
@@ -163,24 +167,54 @@ class ProdutoServiceTest {
 
     @Test
     void deveExcluirProdutoPorId() {
-        when(produtoRepository.existsById(1L))
-                .thenReturn(true);
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        when(produtoRepository.findById(1L))
+                .thenReturn(Optional.of(produto));
+
+        when(entradaEstoqueRepository.existsByProduto_Id(1L))
+                .thenReturn(false);
 
         produtoService.excluirPorId(1L);
 
-        verify(produtoRepository).existsById(1L);
-        verify(produtoRepository, times(1))
-                .deleteById(1L);
+        verify(produtoRepository).findById(1L);
+        verify(entradaEstoqueRepository).existsByProduto_Id(1L);
+        verify(produtoRepository).delete(produto);
     }
 
     @Test
     void deveLancarExcecaoAoFalharExclusao() {
-        when(produtoRepository.existsById(1L))
-                .thenReturn(true);
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                3,
+                categoria
+        );
+
+        when(produtoRepository.findById(1L))
+                .thenReturn(Optional.of(produto));
+
+        when(entradaEstoqueRepository.existsByProduto_Id(1L))
+                .thenReturn(false);
 
         doThrow(new RuntimeException("Erro ao excluir."))
                 .when(produtoRepository)
-                .deleteById(1L);
+                .delete(produto);
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
@@ -189,23 +223,24 @@ class ProdutoServiceTest {
 
         assertEquals("Erro ao excluir.", exception.getMessage());
 
-        verify(produtoRepository).existsById(1L);
-        verify(produtoRepository).deleteById(1L);
+        verify(produtoRepository).delete(produto);
     }
 
     @Test
     void deveLancarExcecaoAoExcluirProdutoInexistente() {
-        when(produtoRepository.existsById(1L))
-                .thenReturn(false);
+        when(produtoRepository.findById(99L))
+                .thenReturn(Optional.empty());
 
         NoSuchElementException exception = assertThrows(
                 NoSuchElementException.class,
-                () -> produtoService.excluirPorId(1L)
+                () -> produtoService.excluirPorId(99L)
         );
 
         assertEquals("Produto não encontrado.", exception.getMessage());
 
-        verify(produtoRepository, never()).deleteById(1L);
+        verify(produtoRepository).findById(99L);
+        verifyNoInteractions(entradaEstoqueRepository);
+        verify(produtoRepository, never()).delete(any(Produto.class));
     }
 
     @Test
@@ -249,12 +284,10 @@ class ProdutoServiceTest {
                 categoria1
         );
 
-        ProdutoCadastroDTO cadastroDTO = new ProdutoCadastroDTO(
+        ProdutoAtualizacaoDTO atualizacaoDTO = new ProdutoAtualizacaoDTO(
                 "Lily",
                 new BigDecimal("180.00"),
-                5,
-                2L,
-                null
+                2L
         );
 
         when(produtoRepository.findById(1L))
@@ -266,11 +299,11 @@ class ProdutoServiceTest {
         when(produtoRepository.save(produto))
                 .thenReturn(produto);
 
-        Produto resultado = produtoService.atualizar(1L, cadastroDTO);
+        Produto resultado = produtoService.atualizar(1L, atualizacaoDTO);
 
         assertEquals("Lily", resultado.getNome());
         assertEquals(new BigDecimal("180.00"), resultado.getPreco());
-        assertEquals(5, resultado.getQuantidadeEstoque());
+        assertEquals(10, resultado.getQuantidadeEstoque());
         assertSame(categoria2, resultado.getCategoria());
 
         verify(produtoRepository).findById(1L);
@@ -280,12 +313,10 @@ class ProdutoServiceTest {
 
     @Test
     void deveLancarExcecaoAoAtualizarProdutoInexistente() {
-        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+        ProdutoAtualizacaoDTO dto = new ProdutoAtualizacaoDTO(
                 "Lily",
                 new BigDecimal("180.00"),
-                5,
-                2L,
-                null
+                2L
         );
 
         when(produtoRepository.findById(99L))
@@ -317,12 +348,10 @@ class ProdutoServiceTest {
                 categoria
         );
 
-        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+        ProdutoAtualizacaoDTO dto = new ProdutoAtualizacaoDTO(
                 "Lily",
                 new BigDecimal("180.00"),
-                5,
-                99L,
-                null
+                99L
         );
 
         when(produtoRepository.findById(1L))
@@ -429,35 +458,35 @@ class ProdutoServiceTest {
     }
 
     @Test
-    void deveRejeitarCompraInicialNaAtualizacaoDoProduto() {
-        CompraInicialDTO compraInicial = new CompraInicialDTO(
-                LocalDate.of(2026,11,21),
-                10,
-                new BigDecimal("100.00")
+    void deveImpedirExclusaoDeProdutoComComprasRegistradas() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
         );
 
-        ProdutoCadastroDTO dto = new ProdutoCadastroDTO(
+        Produto produto = new Produto(
                 "Malbec",
-                new BigDecimal("100.00"),
-                0,
-                1L,
-                compraInicial
+                new BigDecimal("150.00"),
+                10,
+                categoria
         );
+
+        when(produtoRepository.findById(1L))
+                .thenReturn(Optional.of(produto));
+
+        when(entradaEstoqueRepository.existsByProduto_Id(1L))
+                .thenReturn(true);
 
         ConflitoException exception = assertThrows(
                 ConflitoException.class,
-                () -> produtoService.atualizar(1L, dto)
+                () -> produtoService.excluirPorId(1L)
         );
 
         assertEquals(
-                "A compra inicial só pode ser informada no cadastro do produto.",
+                "Não é possível excluir um produto com compras registradas.",
                 exception.getMessage()
         );
 
-        verifyNoInteractions(
-                produtoRepository,
-                categoriaRepository,
-                entradaEstoqueService
-        );
+        verify(produtoRepository, never()).delete(any(Produto.class));
     }
 }

@@ -2,8 +2,6 @@ package br.com.perfumehub.categoria;
 
 import jakarta.persistence.*;
 
-import java.util.Optional;
-
 @Entity
 @Table(name = "categoria")
 public class Categoria {
@@ -15,15 +13,13 @@ public class Categoria {
     @Column(name = "nome", nullable = false, unique = true, length = 100)
     private String nome;
 
-    @Column(name = "descricao", length = 2500)
+    @Column(name = "descricao", length = 255)
     private String descricao;
 
     protected Categoria() {}
 
     public Categoria(String nome, String descricao) {
-        if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("O nome da categoria é obrigatório.");
-        }
+        validarDados(nome, descricao);
 
         this.nome = nome;
         this.descricao = descricao;
@@ -45,11 +41,29 @@ public class Categoria {
             String nome,
             String descricao
     ) {
-        if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("O nome da categoria é obrigatório.");
-        }
+        validarDados(nome, descricao);
 
         this.nome = nome;
         this.descricao = descricao;
+    }
+
+    private static void validarDados(String nome, String descricao) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException(
+                    "O nome da categoria é obrigatório."
+            );
+        }
+
+        if (nome.length() > 100) {
+            throw new IllegalArgumentException(
+                    "O nome da categoria deve ter no máximo 100 caracteres."
+            );
+        }
+
+        if (descricao != null && descricao.length() > 255) {
+            throw new IllegalArgumentException(
+                    "A descrição da categoria deve ter no máximo 255 caracteres."
+            );
+        }
     }
 }

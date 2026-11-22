@@ -36,33 +36,6 @@
     font-size: 0.875rem;
 }
 
-.quantityControl {
-    display: grid;
-    grid-template-columns: 3rem minmax(0, 1fr) 3rem;
-    gap: 0.5rem;
-}
-
-.quantityControl input {
-    min-width: 0;
-    text-align: center;
-}
-
-.quantityControl button {
-    min-height: 3rem;
-    padding: 0;
-    color: var(--color-green);
-    background-color: var(--color-selection);
-    border: 0.0625rem solid var(--color-border);
-    border-radius: 0.5rem;
-    font-size: 1.25rem;
-    cursor: pointer;
-}
-
-.quantityControl button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
 .productSearch {
     display: flex;
     flex-direction: column;

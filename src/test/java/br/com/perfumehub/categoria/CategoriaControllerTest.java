@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.NoSuchElementException;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -200,5 +201,28 @@ class CategoriaControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.erros[0]")
                         .value("Já existe uma categoria com esse nome."));
+    }
+
+    @Test
+    void deveRetornar400AoCadastrarCategoriaComCamposAcimaDosLimites() throws Exception {
+        String json = """
+        {
+            "nome": "%s",
+            "descricao": "%s"
+        }
+        """.formatted(
+                "a".repeat(101),
+                "b".repeat(256)
+        );
+
+        mockMvc.perform(post("/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.length()").value(2))
+                .andExpect(jsonPath("$.erros").value(hasItem("O nome da categoria deve ter no máximo 100 caracteres.")))
+                .andExpect(jsonPath("$.erros").value(hasItem("A descrição da categoria deve ter no máximo 255 caracteres.")));
+
+        verifyNoInteractions(categoriaService);
     }
 }

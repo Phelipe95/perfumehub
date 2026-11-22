@@ -1,13 +1,7 @@
 import styles from './styles.module.css';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export function PurchaseItemCard({ item, onRemove }) {
-    function formatCurrency(value) {
-        return value.toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-        });
-    }
-
     return (
         <article className={styles.card}>
             <button

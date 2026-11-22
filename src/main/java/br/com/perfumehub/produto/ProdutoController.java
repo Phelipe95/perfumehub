@@ -46,7 +46,7 @@ public class ProdutoController {
     @PutMapping("/{id}")
     public ProdutoRespostaDTO atualizar(
             @PathVariable Long id,
-            @Valid @RequestBody ProdutoCadastroDTO dto
+            @Valid @RequestBody ProdutoAtualizacaoDTO dto
     ) {
 
         Produto produto = produtoService.atualizar(id, dto);

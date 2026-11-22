@@ -1,6 +1,7 @@
 package br.com.perfumehub.estoque;
 
 import br.com.perfumehub.categoria.Categoria;
+import br.com.perfumehub.exception.ConflitoException;
 import br.com.perfumehub.produto.Produto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +16,8 @@ import java.time.LocalDate;
 import java.util.NoSuchElementException;
 
 import static org.hamcrest.Matchers.hasItem;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -183,5 +183,75 @@ class EntradaEstoqueControllerTest {
                         .value("JSON inválido ou dados incompatíveis com o formato esperado."));
 
         verifyNoInteractions(entradaEstoqueService);
+    }
+
+    @Test
+    void deveRetornar409AoRegistrarEntradaComCustoAtualDesconhecido() throws Exception {
+        String json = """
+        {
+            "produtoId": 1,
+            "dataCompra": "2026-11-22",
+            "quantidade": 10,
+            "custoUnitario": 100.00
+        }
+        """;
+
+        when(entradaEstoqueService.registrar(
+                1L,
+                LocalDate.of(2026, 11, 22),
+                10,
+                new BigDecimal("100.00")
+        )).thenThrow(new ConflitoException(
+                "O estoque atual possui custo desconhecido."
+        ));
+
+        mockMvc.perform(post("/entradas-estoque")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("O estoque atual possui custo desconhecido."));
+
+        verify(entradaEstoqueService).registrar(
+                1L,
+                LocalDate.of(2026, 11, 22),
+                10,
+                new BigDecimal("100.00")
+        );
+    }
+
+    @Test
+    void deveRetornar409AoRegistrarEntradaAcimaDoLimiteDeEstoque() throws Exception {
+        String json = """
+        {
+            "produtoId": 1,
+            "dataCompra": "2026-11-22",
+            "quantidade": 1,
+            "custoUnitario": 100.00
+        }
+        """;
+
+        when(entradaEstoqueService.registrar(
+                1L,
+                LocalDate.of(2026, 11, 22),
+                1,
+                new BigDecimal("100.00")
+        )).thenThrow(new ConflitoException(
+                "A entrada ultrapassa o limite de quantidade em estoque."
+        ));
+
+        mockMvc.perform(post("/entradas-estoque")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("A entrada ultrapassa o limite de quantidade em estoque."));
+
+        verify(entradaEstoqueService).registrar(
+                1L,
+                LocalDate.of(2026, 11, 22),
+                1,
+                new BigDecimal("100.00")
+        );
     }
 }

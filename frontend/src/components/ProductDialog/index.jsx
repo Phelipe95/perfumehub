@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { DefaultButton } from '../DefaultButton';
+import { Modal } from '../Modal';
 import { ProductForm } from '../ProductForm';
-import styles from './styles.module.css';
 
 export function ProductDialog({ dialogRef, categories, onCategoryCreated, onProductCreated }) {
 
@@ -13,19 +12,18 @@ export function ProductDialog({ dialogRef, categories, onCategoryCreated, onProd
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      className={styles.productDialog}
-      aria-labelledby='new-product-title'
-      onClose={() => setFormKey((current) => current + 1)}
-    >
-      <div className={styles.dialogHeader}>
-        <h2 id='new-product-title'>Novo produto</h2>
-        <DefaultButton onClick={() => dialogRef.current.close()}>
-          Fechar
-        </DefaultButton>
-      </div>
-      <ProductForm categories={categories} onCategoryCreated={onCategoryCreated} onProductCreated={handleProductCreated} key={formKey} />
-    </dialog>
+      <Modal
+          dialogRef={dialogRef}
+          title='Novo produto'
+          titleId='new-product-title'
+          onClose={() => setFormKey((current) => current + 1)}
+      >
+        <ProductForm
+            key={formKey}
+            categories={categories}
+            onCategoryCreated={onCategoryCreated}
+            onProductCreated={handleProductCreated}
+        />
+      </Modal>
   );
 }

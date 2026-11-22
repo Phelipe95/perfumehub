@@ -1,5 +1,6 @@
 package br.com.perfumehub.produto;
 
+import br.com.perfumehub.exception.ConflitoException;
 import org.junit.jupiter.api.Test;
 import br.com.perfumehub.categoria.Categoria;
 import java.math.BigDecimal;
@@ -145,20 +146,26 @@ class ProdutoTest {
         Produto produto = new Produto(
                 "Malbec",
                 new BigDecimal("150.00"),
-                10,
+                0,
                 categoria1
         );
+
+        produto.registrarEntrada(10, new BigDecimal("100.00"));
 
         produto.atualizar(
                 "Lily",
                 new BigDecimal("180.00"),
-                5,
                 categoria2
+        );
+
+        assertEquals(
+                new BigDecimal("100.000000"),
+                produto.getCustoMedio()
         );
 
         assertEquals("Lily", produto.getNome());
         assertEquals(new BigDecimal("180.00"), produto.getPreco());
-        assertEquals(5, produto.getQuantidadeEstoque());
+        assertEquals(10, produto.getQuantidadeEstoque());
         assertEquals(categoria2, produto.getCategoria());
     }
 
@@ -180,7 +187,6 @@ class ProdutoTest {
                 produto.atualizar(
                         "Lily",
                         new BigDecimal("180.00"),
-                        5,
                         null
                 ));
 
@@ -208,35 +214,6 @@ class ProdutoTest {
                 produto.atualizar(
                         "Lily",
                         new BigDecimal("-50.00"),
-                        5,
-                        categoria
-                ));
-
-        assertEquals("Malbec", produto.getNome());
-        assertEquals(new BigDecimal("150.00"), produto.getPreco());
-        assertEquals(10, produto.getQuantidadeEstoque());
-        assertEquals(categoria, produto.getCategoria());
-    }
-
-    @Test
-    void deveRejeitarAtualizacaoComEstoqueNegativo() {
-        Categoria categoria = new Categoria(
-                "Masculino",
-                "Perfumes masculinos"
-        );
-
-        Produto produto = new Produto(
-                "Malbec",
-                new BigDecimal("150.00"),
-                10,
-                categoria
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-                produto.atualizar(
-                        "Lily",
-                        new BigDecimal("180.00"),
-                        -5,
                         categoria
                 ));
 
@@ -264,7 +241,6 @@ class ProdutoTest {
                 produto.atualizar(
                         "   ",
                         new BigDecimal("180.00"),
-                        5,
                         categoria
                 ));
 
@@ -292,7 +268,6 @@ class ProdutoTest {
                 produto.atualizar(
                         null,
                         new BigDecimal("180.00"),
-                        5,
                         categoria
                 ));
 
@@ -320,7 +295,6 @@ class ProdutoTest {
                 produto.atualizar(
                         "Lily",
                         null,
-                        5,
                         categoria
                 ));
 
@@ -331,7 +305,7 @@ class ProdutoTest {
     }
 
     @Test
-    void deveAtualizarProdutoComPrecoEEstoqueZero() {
+    void deveAtualizarProdutoComPrecoZeroPreservandoEstoque() {
         Categoria categoria = new Categoria(
                 "Masculino",
                 "Perfumes masculinos"
@@ -347,13 +321,12 @@ class ProdutoTest {
         produto.atualizar(
                 "Lily",
                 new BigDecimal("0.00"),
-                0,
                 categoria
         );
 
         assertEquals("Lily", produto.getNome());
         assertEquals(new BigDecimal("0.00"), produto.getPreco());
-        assertEquals(0, produto.getQuantidadeEstoque());
+        assertEquals(10, produto.getQuantidadeEstoque());
         assertEquals(categoria, produto.getCategoria());
     }
 
@@ -425,7 +398,7 @@ class ProdutoTest {
         );
 
         assertThrows(
-                IllegalStateException.class,
+                ConflitoException.class,
                 () -> produto.registrarEntrada(2, new BigDecimal("80.00"))
         );
 
@@ -520,12 +493,134 @@ class ProdutoTest {
 
         produto.registrarEntrada(Integer.MAX_VALUE, custoUnitario);
 
-        assertThrows(
-                ArithmeticException.class,
+        ConflitoException exception = assertThrows(
+                ConflitoException.class,
                 () -> produto.registrarEntrada(1, custoUnitario)
         );
 
+        assertEquals(
+                "A entrada ultrapassa o limite de quantidade em estoque.",
+                exception.getMessage()
+        );
         assertEquals(Integer.MAX_VALUE, produto.getQuantidadeEstoque());
         assertEquals(new BigDecimal("100.000000"), produto.getCustoMedio());
+    }
+
+    @Test
+    void deveRejeitarAlteracaoParaPrecoComMaisDeDuasCasasDecimais() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> produto.alterarPreco(new BigDecimal("150.001"))
+        );
+
+        assertEquals(
+                "O preço do produto deve ter até 8 dígitos inteiros e 2 casas decimais.",
+                exception.getMessage()
+        );
+
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+    }
+
+    @Test
+    void deveRejeitarAlteracaoParaPrecoAcimaDoLimite() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> produto.alterarPreco(new BigDecimal("100000000.00"))
+        );
+
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+    }
+
+    @Test
+    void deveAceitarAlteracaoParaPrecoNoLimite() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        BigDecimal precoLimite = new BigDecimal("99999999.99");
+
+        produto.alterarPreco(precoLimite);
+
+        assertEquals(precoLimite, produto.getPreco());
+    }
+
+    @Test
+    void deveRejeitarAtualizacaoComNomeAcimaDoLimite() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        Produto produto = new Produto(
+                "Malbec",
+                new BigDecimal("150.00"),
+                10,
+                categoria
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> produto.atualizar(
+                        "a".repeat(151),
+                        new BigDecimal("180.00"),
+                        categoria
+                )
+        );
+
+        assertEquals("Malbec", produto.getNome());
+        assertEquals(new BigDecimal("150.00"), produto.getPreco());
+        assertEquals(10, produto.getQuantidadeEstoque());
+        assertSame(categoria, produto.getCategoria());
+    }
+
+    @Test
+    void deveAceitarNomeNoLimite() {
+        Categoria categoria = new Categoria(
+                "Masculino",
+                "Perfumes masculinos"
+        );
+
+        String nome = "a".repeat(150);
+
+        Produto produto = new Produto(
+                nome,
+                new BigDecimal("150.00"),
+                0,
+                categoria
+        );
+
+        assertEquals(nome, produto.getNome());
     }
 }
