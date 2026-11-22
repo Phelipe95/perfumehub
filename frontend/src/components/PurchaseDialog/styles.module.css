@@ -1,0 +1,26 @@
+.purchaseDialog {
+    width: min(32rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
+    padding: 1.5rem;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    border: 0.0625rem solid var(--color-border);
+    border-radius: 0.75rem;
+}
+
+.purchaseDialog::backdrop {
+    background-color: rgb(37 56 46 / 45%);
+}
+
+.dialogHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dialogHeader h2 {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 400;
+}

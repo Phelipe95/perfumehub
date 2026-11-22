@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MainTemplate } from '../../templates/MainTemplate';
 import { CatalogFilters } from '../../components/CatalogFilters';
 import { DefaultButton } from '../../components/DefaultButton';
 import { ProductCard } from '../../components/ProductCard';
 import { ProductCardSkeleton } from "../../components/ProductCardSkeleton/index.jsx";
 import { ProductDialog } from '../../components/ProductDialog';
+import { PurchaseDialog } from '../../components/PurchaseDialog';
 import { useCatalog } from '../../hooks/useCatalog';
 import styles from './styles.module.css';
 
@@ -20,6 +21,7 @@ export function Inventory() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const productDialog = useRef(null);
+  const purchaseDialog = useRef(null);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLocaleLowerCase('pt-BR')
@@ -28,6 +30,10 @@ export function Inventory() {
       product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  useEffect(() => {
+    document.title = 'PerfumeHub | Meu estoque';
+  }, []);
 
   return (
     <MainTemplate>
@@ -38,6 +44,7 @@ export function Inventory() {
             onCategoryCreated={addCategory}
             onProductCreated={addProduct}
         />
+        <PurchaseDialog dialogRef={purchaseDialog} products={products} />
         <div className={styles.catalogHeader}>
           <div>
             <h1 id='inventory-title'>Meu estoque</h1>
@@ -47,7 +54,9 @@ export function Inventory() {
             <DefaultButton variant='primary' onClick={() => productDialog.current.showModal()}>
               Novo produto
             </DefaultButton>
-            <DefaultButton>Registrar compra</DefaultButton>
+            <DefaultButton onClick={() => purchaseDialog.current.showModal()}>
+              Registrar compra
+            </DefaultButton>
             <DefaultButton>Registrar venda</DefaultButton>
           </div>
         </div>

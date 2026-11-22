@@ -1,0 +1,121 @@
+.purchaseForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.purchaseForm label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.purchaseForm label span {
+    font-size: 0.875rem;
+}
+
+.purchaseForm input,
+.purchaseForm select {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 0.0625rem solid var(--color-border);
+    border-radius: 0.5rem;
+}
+
+.quantityField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.quantityField > label {
+    font-size: 0.875rem;
+}
+
+.quantityControl {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+    gap: 0.5rem;
+}
+
+.quantityControl input {
+    min-width: 0;
+    text-align: center;
+}
+
+.quantityControl button {
+    min-height: 3rem;
+    padding: 0;
+    color: var(--color-green);
+    background-color: var(--color-selection);
+    border: 0.0625rem solid var(--color-border);
+    border-radius: 0.5rem;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.quantityControl button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.productSearch {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.productSearch > label {
+    font-size: 0.875rem;
+}
+
+.suggestions {
+    max-height: 12rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    background-color: var(--color-surface);
+    border: 0.0625rem solid var(--color-border);
+    border-radius: 0.5rem;
+}
+
+.suggestions button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    color: var(--color-text);
+    background: transparent;
+    border: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+.suggestions button:hover,
+.suggestions button:focus-visible {
+    background-color: var(--color-selection);
+}
+
+.purchaseItems {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.itemForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.itemActions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.itemActions > button {
+    flex: 1;
+}
