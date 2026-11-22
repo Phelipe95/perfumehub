@@ -5,22 +5,31 @@ import br.com.perfumehub.categoria.CategoriaRepository;
 import br.com.perfumehub.estoque.CompraInicialDTO;
 import br.com.perfumehub.estoque.EntradaEstoque;
 import br.com.perfumehub.estoque.EntradaEstoqueRepository;
+import br.com.perfumehub.estoque.EntradaEstoqueService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -40,7 +49,13 @@ class ProdutoServiceIntegrationTest {
     private EntradaEstoqueRepository entradaEstoqueRepository;
 
     @Autowired
+    private EntradaEstoqueService entradaEstoqueService;
+
+    @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @Test
     void deveCadastrarProdutoComCompraInicialNoBanco() {
@@ -129,6 +144,192 @@ class ProdutoServiceIntegrationTest {
             assertEquals(totalProdutosAntes, produtoRepository.count());
             assertEquals(totalEntradasAntes, entradaEstoqueRepository.count());
         } finally {
+            categoriaRepository.deleteById(categoria.getId());
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveRejeitarAtualizacaoDeProdutoComVersaoDesatualizada() {
+        Categoria categoria = categoriaRepository.saveAndFlush(
+                new Categoria(
+                        "Categoria concorrência " + UUID.randomUUID(),
+                        "Categoria para teste de versão"
+                )
+        );
+
+        Produto produtoSalvo = produtoRepository.saveAndFlush(
+                new Produto(
+                        "Malbec",
+                        new BigDecimal("150.00"),
+                        0,
+                        categoria
+                )
+        );
+
+        Long produtoId = produtoSalvo.getId();
+
+        Produto produtoDesatualizado = produtoRepository
+                .findById(produtoId)
+                .orElseThrow();
+
+        try {
+            entradaEstoqueService.registrar(
+                    produtoId,
+                    LocalDate.of(2026, 11, 22),
+                    10,
+                    new BigDecimal("100.00")
+            );
+
+            produtoDesatualizado.registrarEntrada(
+                    5,
+                    new BigDecimal("80.00")
+            );
+
+            assertThrows(
+                    OptimisticLockingFailureException.class,
+                    () -> produtoRepository.saveAndFlush(produtoDesatualizado)
+            );
+
+            Produto produtoAtual = produtoRepository
+                    .findById(produtoId)
+                    .orElseThrow();
+
+            assertEquals(10, produtoAtual.getQuantidadeEstoque());
+            assertEquals(
+                    new BigDecimal("100.000000"),
+                    produtoAtual.getCustoMedio()
+            );
+
+            assertEquals(
+                    1,
+                    entradaEstoqueRepository.findByProduto_Id(produtoId).size()
+            );
+        } finally {
+            entradaEstoqueRepository.deleteAll(
+                    entradaEstoqueRepository.findByProduto_Id(produtoId)
+            );
+            produtoRepository.deleteById(produtoId);
+            categoriaRepository.deleteById(categoria.getId());
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveDesfazerEntradaQuandoHouverConflitoEntreCompras() throws Exception {
+        Categoria categoria = categoriaRepository.saveAndFlush(
+                new Categoria(
+                        "Categoria teste " + UUID.randomUUID(),
+                        "Categoria para teste"
+                )
+        );
+
+        Produto produtoSalvo = produtoRepository.saveAndFlush(
+                new Produto(
+                        "Malbec",
+                        new BigDecimal("150.00"),
+                        0,
+                        categoria
+                )
+        );
+
+        Long produtoId = produtoSalvo.getId();
+
+        CountDownLatch produtoLido = new CountDownLatch(1);
+        CountDownLatch liberarCompra = new CountDownLatch(1);
+
+        TransactionTemplate transactionTemplate =
+                new TransactionTemplate(transactionManager);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        Future<?> compraPendente = executor.submit(() ->
+                transactionTemplate.executeWithoutResult(status -> {
+                    produtoRepository.findById(produtoId).orElseThrow();
+
+                    produtoLido.countDown();
+
+                    try {
+                        if (!liberarCompra.await(10, TimeUnit.SECONDS)) {
+                            throw new IllegalStateException(
+                                    "Tempo esgotado aguardando a liberação da compra."
+                            );
+                        }
+                    } catch (InterruptedException exception) {
+                        Thread.currentThread().interrupt();
+
+                        throw new IllegalStateException(
+                                "A operação de teste foi interrompida.",
+                                exception
+                        );
+                    }
+
+                    entradaEstoqueService.registrar(
+                            produtoId,
+                            LocalDate.of(2026, 11, 22),
+                            5,
+                            new BigDecimal("80.00")
+                    );
+                })
+        );
+
+        try {
+            assertTrue(
+                    produtoLido.await(10, TimeUnit.SECONDS),
+                    "A operação pendente não carregou o produto a tempo."
+            );
+
+            entradaEstoqueService.registrar(
+                    produtoId,
+                    LocalDate.of(2026, 11, 22),
+                    10,
+                    new BigDecimal("100.00")
+            );
+
+            liberarCompra.countDown();
+
+            ExecutionException exception = assertThrows(
+                    ExecutionException.class,
+                    () -> compraPendente.get(10, TimeUnit.SECONDS)
+            );
+
+            assertInstanceOf(
+                    OptimisticLockingFailureException.class,
+                    exception.getCause()
+            );
+
+            Produto produtoAtual = produtoRepository
+                    .findById(produtoId)
+                    .orElseThrow();
+
+            assertEquals(10, produtoAtual.getQuantidadeEstoque());
+            assertEquals(
+                    new BigDecimal("100.000000"),
+                    produtoAtual.getCustoMedio()
+            );
+
+            List<EntradaEstoque> entradas =
+                    entradaEstoqueRepository.findByProduto_Id(produtoId);
+
+            assertEquals(1, entradas.size());
+            assertEquals(10, entradas.get(0).getQuantidade());
+            assertEquals(
+                    new BigDecimal("100.00"),
+                    entradas.get(0).getCustoUnitario()
+            );
+        } finally {
+            liberarCompra.countDown();
+            executor.shutdownNow();
+
+            assertTrue(
+                    executor.awaitTermination(10, TimeUnit.SECONDS),
+                    "A operação pendente não encerrou a tempo."
+            );
+
+            entradaEstoqueRepository.deleteAll(
+                    entradaEstoqueRepository.findByProduto_Id(produtoId)
+            );
+            produtoRepository.deleteById(produtoId);
             categoriaRepository.deleteById(categoria.getId());
         }
     }

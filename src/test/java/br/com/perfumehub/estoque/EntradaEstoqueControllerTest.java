@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -251,6 +252,41 @@ class EntradaEstoqueControllerTest {
                 1L,
                 LocalDate.of(2026, 11, 22),
                 1,
+                new BigDecimal("100.00")
+        );
+    }
+
+    @Test
+    void deveRetornar409QuandoHouverConflitoDeConcorrencia() throws Exception {
+        String json = """
+        {
+            "produtoId": 1,
+            "dataCompra": "2026-11-22",
+            "quantidade": 10,
+            "custoUnitario": 100.00
+        }
+        """;
+
+        when(entradaEstoqueService.registrar(
+                1L,
+                LocalDate.of(2026, 11, 22),
+                10,
+                new BigDecimal("100.00")
+        )).thenThrow(new OptimisticLockingFailureException(
+                "Conflito de versão simulado."
+        ));
+
+        mockMvc.perform(post("/entradas-estoque")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("O produto foi alterado por outra operação. Atualize os dados e tente novamente."));
+
+        verify(entradaEstoqueService).registrar(
+                1L,
+                LocalDate.of(2026, 11, 22),
+                10,
                 new BigDecimal("100.00")
         );
     }

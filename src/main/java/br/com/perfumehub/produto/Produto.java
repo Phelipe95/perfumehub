@@ -31,6 +31,10 @@ public class Produto {
     @Column(name = "custo_medio", precision = 14, scale = 6)
     private BigDecimal custoMedio;
 
+    @Version
+    @Column(name = "versao", nullable = false)
+    private Long versao;
+
     protected Produto() {}
 
     public Produto(

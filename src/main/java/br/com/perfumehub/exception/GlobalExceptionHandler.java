@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -64,6 +65,21 @@ public class GlobalExceptionHandler {
             ConflitoException exception
     ) {
         List<String> mensagens = List.of(exception.getMessage());
+
+        ErroRespostaDTO resposta = new ErroRespostaDTO(mensagens);
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(resposta);
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErroRespostaDTO> tratarConcorrencia(
+            OptimisticLockingFailureException exception
+    ) {
+        List<String> mensagens = List.of(
+                "O produto foi alterado por outra operação. Atualize os dados e tente novamente."
+        );
 
         ErroRespostaDTO resposta = new ErroRespostaDTO(mensagens);
 
