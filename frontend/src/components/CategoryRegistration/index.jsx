@@ -3,14 +3,25 @@ import { createCategory } from '../../services/categoryService';
 import { DefaultButton } from '../DefaultButton';
 import styles from './styles.module.css';
 
-export function CategoryRegistration({ categories, onCategoryCreated }) {
+export function CategoryRegistration({
+                                         categories,
+                                         onCategoryCreated,
+                                         savingCategory,
+                                         setSavingCategory,
+                                         savingProduct,
+                                     }) {
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [categoryName, setCategoryName] = useState('');
-  const [savingCategory, setSavingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
 
+  const isBusy = savingProduct || savingCategory;
+
   async function handleSaveCategory() {
+      if (isBusy) {
+          return;
+      }
+
       const name = categoryName.trim();
 
       if (!name) {
@@ -52,6 +63,7 @@ export function CategoryRegistration({ categories, onCategoryCreated }) {
           name='categoriaId'
           value={selectedCategoryId}
           onChange={event => setSelectedCategoryId(event.target.value)}
+          disabled={isBusy}
           required
         >
           <option value='' disabled>Selecione uma categoria</option>
@@ -69,7 +81,7 @@ export function CategoryRegistration({ categories, onCategoryCreated }) {
           aria-expanded={showNewCategory}
           aria-controls='new-category-registration'
           onClick={() => setShowNewCategory((current) => !current)}
-          disabled={savingCategory}
+          disabled={isBusy}
         >
           {showNewCategory ? 'Cancelar' : 'Criar categoria'}
         </DefaultButton>
@@ -88,14 +100,14 @@ export function CategoryRegistration({ categories, onCategoryCreated }) {
                     placeholder='Ex.: Feminino'
                     value={categoryName}
                     onChange={event => setCategoryName(event.target.value)}
-                    disabled={savingCategory}
+                    disabled={isBusy}
                 />
 
                 <DefaultButton
                     type='button'
                     variant='primary'
                     onClick={handleSaveCategory}
-                    disabled={savingCategory}
+                    disabled={isBusy}
                 >
                     {savingCategory ? 'Salvando' : 'Salvar'}
                 </DefaultButton>

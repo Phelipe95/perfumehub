@@ -7,6 +7,7 @@ export function Modal({
                           titleId,
                           onClose,
                           children,
+                          isSaving = false
                       }) {
     return (
         <dialog
@@ -14,12 +15,18 @@ export function Modal({
             className={styles.modal}
             aria-labelledby={titleId}
             onClose={onClose}
+            aria-busy={isSaving}
+            onCancel={(event) => {
+                if (isSaving) {
+                    event.preventDefault();
+                }
+            }}
         >
             <div className={styles.header}>
                 <h2 id={titleId}>{title}</h2>
 
                 <DefaultButton
-                    onClick={() => dialogRef.current.close()}
+                    onClick={() => dialogRef.current.close()} disabled={isSaving}
                 >
                     Fechar
                 </DefaultButton>

@@ -5,14 +5,25 @@ import { DefaultButton } from '../DefaultButton';
 import { QuantityInput } from '../QuantityInput';
 import styles from './styles.module.css';
 
-export function ProductForm({ categories, onCategoryCreated, onProductCreated }) {
+export function ProductForm({
+                              categories,
+                              onCategoryCreated,
+                              onProductCreated,
+                              savingProduct,
+                              setSavingProduct,
+                              savingCategory,
+                              setSavingCategory
+                            }) {
   const [registerInitialPurchase, setRegisterInitialPurchase] = useState(false);
   const [initialQuantity, setInitialQuantity] = useState(1);
-  const [savingProduct, setSavingProduct] = useState(false);
   const [productError, setProductError] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (savingProduct || savingCategory) {
+      return;
+    }
 
     const formData = new FormData(event.currentTarget);
 
@@ -73,7 +84,13 @@ export function ProductForm({ categories, onCategoryCreated, onProductCreated })
         />
       </label>
 
-      <CategoryRegistration categories={categories} onCategoryCreated={onCategoryCreated} />
+      <CategoryRegistration
+          categories={categories}
+          onCategoryCreated={onCategoryCreated}
+          savingCategory={savingCategory}
+          setSavingCategory={setSavingCategory}
+          savingProduct={savingProduct}
+      />
 
       <label className={styles.purchaseOption}>
         <input
@@ -127,7 +144,7 @@ export function ProductForm({ categories, onCategoryCreated, onProductCreated })
       <DefaultButton
           type='submit'
           variant='primary'
-          disabled={savingProduct}
+          disabled={savingProduct || savingCategory}
       >
         {savingProduct ? 'Salvando...' : 'Cadastrar produto'}
       </DefaultButton>
