@@ -8,12 +8,28 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private String obterNomeRestricao(Throwable exception) {
+        Throwable causa = exception;
+
+        while (causa != null) {
+            if (causa instanceof ConstraintViolationException violacao) {
+                return violacao.getConstraintName();
+            }
+
+            causa = causa.getCause();
+        }
+
+        return null;
+    }
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<ErroRespostaDTO> tratarNaoEncontrado(
@@ -82,6 +98,38 @@ public class GlobalExceptionHandler {
         );
 
         ErroRespostaDTO resposta = new ErroRespostaDTO(mensagens);
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(resposta);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErroRespostaDTO> tratarIntegridade(
+            DataIntegrityViolationException exception
+    ) {
+        String restricao = obterNomeRestricao(exception);
+
+        if (restricao == null) {
+            throw exception;
+        }
+
+        String mensagem = switch (restricao) {
+            case "categoria_nome_key" ->
+                    "Já existe uma categoria com esse nome.";
+
+            case "fk_produto_categoria" ->
+                    "A categoria não está disponível ou possui produtos vinculados. Atualize os dados e tente novamente.";
+
+            case "fk_entrada_estoque_produto" ->
+                    "O produto não está disponível ou possui compras registradas. Atualize os dados e tente novamente.";
+
+            default -> throw exception;
+        };
+
+        ErroRespostaDTO resposta = new ErroRespostaDTO(
+                List.of(mensagem)
+        );
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)

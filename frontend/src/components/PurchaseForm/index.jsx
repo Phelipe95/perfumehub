@@ -1,6 +1,7 @@
 import styles from './styles.module.css';
 import { DefaultButton } from '../DefaultButton';
 import { PurchaseItemCard } from '../PurchaseItemCard';
+import { ProductSearch } from '../ProductSearch';
 import { QuantityInput } from '../QuantityInput';
 import { useState } from 'react';
 
@@ -22,14 +23,6 @@ export function PurchaseForm({ products, onClose }) {
     const [unitCost, setUnitCost] = useState('');
     const [itemError, setItemError] = useState('');
     const [showItemForm, setShowItemForm] = useState(true);
-
-    const normalizedSearch = productSearch.trim().toLocaleLowerCase('pt-BR');
-
-    const suggestedProducts = normalizedSearch === '' || selectedProduct
-        ? []
-        : products.filter((product) =>
-            product.name.toLocaleLowerCase('pt-BR').includes(normalizedSearch)
-        );
 
     function resetItemForm() {
         setProductSearch('');
@@ -137,46 +130,20 @@ export function PurchaseForm({ products, onClose }) {
             {showItemForm && (
                 <div className={styles.itemForm}>
 
-                    <div className={styles.productSearch}>
-                        <label htmlFor='purchase-product-search'>Buscar produto</label>
-
-                        <input
-                            id='purchase-product-search'
-                            type='search'
-                            autoComplete='off'
-                            placeholder='Digite o nome do produto'
-                            value={productSearch}
-                            onChange={(event) => {
-                                setProductSearch(event.target.value);
-                                setSelectedProduct(null);
-                            }}
-                        />
-
-                        {suggestedProducts.length > 0 && (
-                            <ul className={styles.suggestions}>
-                                {suggestedProducts.map((product) => (
-                                    <li key={product.id}>
-                                        <button
-                                            type='button'
-                                            onClick={() => {
-                                                setSelectedProduct(product);
-                                                setProductSearch(product.name);
-                                            }}
-                                        >
-                                            {product.name}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-
-                        {normalizedSearch !== '' &&
-                            !selectedProduct &&
-                            suggestedProducts.length === 0 && (
-                                <p role='status'>Nenhum produto encontrado.</p>
-                            )}
-
-                    </div>
+                    <ProductSearch
+                        id='purchase-product-search'
+                        products={products}
+                        search={productSearch}
+                        selectedProduct={selectedProduct}
+                        onSearchChange={(text) => {
+                            setProductSearch(text);
+                            setSelectedProduct(null);
+                        }}
+                        onSelect={(product) => {
+                            setSelectedProduct(product);
+                            setProductSearch(product.name);
+                        }}
+                    />
 
                     <label>
                         <span>Custo de compra por unidade (R$)</span>

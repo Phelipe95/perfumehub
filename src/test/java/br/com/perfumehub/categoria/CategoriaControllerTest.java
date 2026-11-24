@@ -8,8 +8,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.NoSuchElementException;
+import java.sql.SQLException;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
@@ -224,5 +227,39 @@ class CategoriaControllerTest {
                 .andExpect(jsonPath("$.erros").value(hasItem("A descrição da categoria deve ter no máximo 255 caracteres.")));
 
         verifyNoInteractions(categoriaService);
+    }
+
+    @Test
+    void deveRetornar409QuandoBancoRejeitarNomeDuplicado() throws Exception {
+        ConstraintViolationException causa = new ConstraintViolationException(
+                "Restrição de unicidade violada.",
+                new SQLException("Nome duplicado.", "23505"),
+                "categoria_nome_key"
+        );
+
+        DataIntegrityViolationException exception =
+                new DataIntegrityViolationException(
+                        "Não foi possível salvar a categoria.",
+                        causa
+                );
+
+        when(categoriaService.cadastrar(any(CategoriaCadastroDTO.class)))
+                .thenThrow(exception);
+
+        String json = """
+        {
+            "nome": "Feminino",
+            "descricao": "Perfumes femininos"
+        }
+        """;
+
+        mockMvc.perform(post("/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erros[0]")
+                        .value("Já existe uma categoria com esse nome."));
+
+        verify(categoriaService).cadastrar(any(CategoriaCadastroDTO.class));
     }
 }
